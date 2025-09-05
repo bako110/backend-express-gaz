@@ -1,5 +1,6 @@
 require('dotenv').config(); // Charge les variables d'environnement
 const express = require('express');
+const cors = require('cors'); // Import du package CORS
 const connectDB = require('./config/db'); // Import connexion DB
 const authRoutes = require('./routes/authRoute'); // Import routes auth
 
@@ -11,6 +12,9 @@ connectDB();
 
 // Middleware
 app.use(express.json());
+
+// Activer CORS pour toutes les origines
+app.use(cors());
 
 // Routes
 app.use('/api/auth', authRoutes);
