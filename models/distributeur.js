@@ -4,8 +4,8 @@ const mongoose = require('mongoose');
 const distributorSchema = new mongoose.Schema({
   // ------------------- Distributor -------------------
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // lien vers le User existant
-  address: { type: String, required: true },
-  zone: { type: String, required: true },
+  address: { type: String, required: false },
+  zone: { type: String, required: false },
   revenue: { type: Number, default: 0 },
   balance: { type: Number, default: 0 },
 
@@ -59,6 +59,14 @@ const distributorSchema = new mongoose.Schema({
     }
   ],
 }, { timestamps: true });
+
+// ------------------- AJOUTER L'INDEX ICI -------------------
+  distributorSchema.index({
+    'products.name': 'text',
+    'products.type': 'text',
+    zone: 'text',
+    'user.name': 'text', // si tu stockes username dans User
+  });
 
 // ------------------- Export -------------------
 module.exports = mongoose.model('Distributor', distributorSchema);

@@ -3,10 +3,18 @@ const AuthController = require('../controllers/authController');
 
 const router = express.Router();
 
-// Route inscription
+// ====================
+// AUTH ROUTES
+// ====================
+
+// Inscription
 router.post('/register', AuthController.register);
 
-// Route connexion avec PIN
+// Connexion avec userId + PIN
 router.post('/login', AuthController.login);
+
+// Connexion avec téléphone + PIN
+router.post('/login-phone', AuthController.loginWithPhone);
+
 
 module.exports = router;

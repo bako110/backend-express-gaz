@@ -1,11 +1,13 @@
 const UserService = require('../services/authService');
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'secret123'; // Mettre un secret sécurisé en prod
+const JWT_SECRET = process.env.JWT_SECRET || 'secret123'; // ⚠️ À changer en prod
 const JWT_EXPIRES_IN = '7d'; // Durée de validité du token
 
 class AuthController {
-  // Inscription reste la même
+  // ====================
+  // INSCRIPTION
+  // ====================
   static async register(req, res) {
     try {
       const { name, phone, pin, userType } = req.body;
@@ -14,17 +16,23 @@ class AuthController {
         return res.status(400).json({ message: 'Tous les champs sont requis' });
       }
 
-      const user = await UserService.registerUser({ name, phone, pin, userType });
+      const { user, profile } = await UserService.registerUser({ name, phone, pin, userType });
 
-      console.log("Info utilisateur créé :", user);
+      console.log("Utilisateur créé :", { user, profile });
 
-      res.status(201).json({ message: 'Inscription réussie', user });
+      res.status(201).json({ 
+        message: 'Inscription réussie', 
+        user, 
+        profile 
+      });
     } catch (error) {
       res.status(400).json({ message: error.message || 'Erreur lors de l’inscription' });
     }
   }
 
-  // Connexion avec PIN + génération du token
+  // ====================
+  // CONNEXION AVEC userId + PIN
+  // ====================
   static async login(req, res) {
     try {
       const { userId, pin } = req.body;
@@ -33,14 +41,14 @@ class AuthController {
         return res.status(400).json({ message: 'Le userId et le PIN sont requis' });
       }
 
-      const user = await UserService.loginWithPin({ userId, pin });
+      const { user, profile, token: existingToken } = await UserService.loginWithPin({ userId, pin });
 
       if (!user) {
         return res.status(401).json({ message: 'PIN incorrect ou utilisateur introuvable' });
       }
 
-      // Génération du token
-      const token = jwt.sign(
+      // Génération du token si non fourni par le service
+      const token = existingToken || jwt.sign(
         { id: user.id, userType: user.userType },
         JWT_SECRET,
         { expiresIn: JWT_EXPIRES_IN }
@@ -49,7 +57,42 @@ class AuthController {
       res.status(200).json({
         message: 'Connexion réussie',
         user,
-        token, 
+        profile,
+        token,
+      });
+    } catch (error) {
+      res.status(400).json({ message: error.message || 'Erreur lors de la connexion' });
+    }
+  }
+
+  // ====================
+  // CONNEXION AVEC téléphone + PIN
+  // ====================
+  static async loginWithPhone(req, res) {
+    try {
+      const { phone, pin } = req.body;
+
+      if (!phone || !pin) {
+        return res.status(400).json({ message: 'Le téléphone et le PIN sont requis' });
+      }
+
+      const { user, profile, token: existingToken } = await UserService.loginWithPhone({ phone, pin });
+
+      if (!user) {
+        return res.status(401).json({ message: 'Téléphone ou PIN incorrect' });
+      }
+
+      const token = existingToken || jwt.sign(
+        { id: user.id, userType: user.userType },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRES_IN }
+      );
+
+      res.status(200).json({
+        message: 'Connexion réussie',
+        user,
+        profile,
+        token,
       });
     } catch (error) {
       res.status(400).json({ message: error.message || 'Erreur lors de la connexion' });

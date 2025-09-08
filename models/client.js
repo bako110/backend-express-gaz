@@ -52,6 +52,10 @@ const clientSchema = new mongoose.Schema({
       address: { type: String },
       clientName: { type: String },
       clientPhone: { type: String },
+
+      // ------------------- Infos distributeur -------------------
+      distributorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Distributor' },
+      distributorName: { type: String },
     }
   ],
 
@@ -69,6 +73,10 @@ const clientSchema = new mongoose.Schema({
       total: { type: Number },
       date: { type: Date, default: Date.now },
       status: { type: String, enum: ['livre', 'annule'], default: 'livre' },
+      clientName: { type: String },        // facultatif mais pratique
+      clientPhone: { type: String },       // facultatif mais pratique
+      distributorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Distributor' }, // pour référence
+      distributorName: { type: String },
     }
   ]
 }, { timestamps: true });

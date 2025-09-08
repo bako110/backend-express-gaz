@@ -3,6 +3,10 @@ const express = require('express');
 const cors = require('cors'); // Import du package CORS
 const connectDB = require('./config/db'); // Import connexion DB
 const authRoutes = require('./routes/authRoute'); // Import routes auth
+const productRoutes = require('./routes/distributeur/productRoute')
+const searchRoutes = require('./routes/searchdistributor');
+const orderRoutes = require('./routes/orderRoutes');
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,7 +22,9 @@ app.use(cors());
 
 // Routes
 app.use('/api/auth', authRoutes);
-
+app.use('/api/distributeurs', productRoutes)
+app.use('/api/distributors', searchRoutes); 
+app.use('/api/orders', orderRoutes);
 // Route test
 app.get('/', (req, res) => {
   res.send('Bienvenue sur le serveur backend-gaz!');
