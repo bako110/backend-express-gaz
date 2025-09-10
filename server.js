@@ -6,6 +6,8 @@ const authRoutes = require('./routes/authRoute'); // Import routes auth
 const productRoutes = require('./routes/distributeur/productRoute')
 const searchRoutes = require('./routes/searchdistributor');
 const orderRoutes = require('./routes/orderRoutes');
+const orderRoutesdistributeur = require('./routes/distributeur/distributorRoute');
+const livreurRoutes = require('./routes/livreur/livreurRoute')
 
 
 const app = express();
@@ -25,6 +27,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/distributeurs', productRoutes)
 app.use('/api/distributors', searchRoutes); 
 app.use('/api/orders', orderRoutes);
+app.use('/api/distributeurs/orders', orderRoutesdistributeur);
+app.use('/api/livreur', livreurRoutes)
+
+
 // Route test
 app.get('/', (req, res) => {
   res.send('Bienvenue sur le serveur backend-gaz!');

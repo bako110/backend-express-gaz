@@ -45,7 +45,7 @@ const clientSchema = new mongoose.Schema({
       orderTime: { type: Date, default: Date.now },
       status: { 
         type: String, 
-        enum: ['nouveau', 'confirme', 'prepare', 'en_route', 'livre'], 
+        enum: ['nouveau', 'confirme', 'en_livraison', 'livre', 'annule'], 
         default: 'nouveau' 
       },
       priority: { type: String, enum: ['normal', 'high', 'urgent'], default: 'normal' },

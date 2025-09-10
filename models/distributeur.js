@@ -39,7 +39,7 @@ const distributorSchema = new mongoose.Schema({
       total: { type: Number, required: true },
       orderTime: { type: Date, default: Date.now },
       priority: { type: String, enum: ['normal', 'high', 'urgent'], default: 'normal' },
-      status: { type: String, enum: ['nouveau', 'confirme', 'prepare', 'en_route', 'livre'], default: 'nouveau' },
+      status: { type: String, enum: ['nouveau', 'confirme', 'en_livraison', 'livre', 'annule'], default: 'nouveau' },
       distance: { type: String },
     }
   ],

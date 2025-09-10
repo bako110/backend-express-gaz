@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demande d'Audience Ministérielle</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2.5cm;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Times New Roman', serif;
+            font-size: 12pt;
+            line-height: 1.5;
+            color: #000;
+            background: #fff;
+            max-width: 21cm;
+            margin: 0 auto;
+            padding: 2.5cm;
+        }
+        
+        .document-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 3cm;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #1e3a8a;
+        }
+        
+        .sender-info {
+            font-size: 11pt;
+            line-height: 1.4;
+            width: 45%;
+        }
+        
+        .sender-logo {
+            width: 25%;
+            text-align: center;
+            color: #1e3a8a;
+            font-weight: bold;
+            font-size: 10pt;
+        }
+        
+        .reference-info {
+            width: 30%;
+            font-size: 10pt;
+            text-align: right;
+        }
+        
+        .reference-box {
+            border: 1px solid #1e3a8a;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f8faff;
+        }
+        
+        .recipient {
+            margin: 2cm 0;
+            padding: 15px;
+            background-color: #f8faff;
+            border-left: 4px solid #1e3a8a;
+        }
+        
+        .recipient-title {
+            font-size: 13pt;
+            font-weight: bold;
+            color: #1e3a8a;
+            margin-bottom: 8px;
+        }
+        
+        .recipient-address {
+            font-size: 11pt;
+            line-height: 1.4;
+        }
+        
+        .subject {
+            margin: 2cm 0;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14pt;
+            text-decoration: underline;
+            color: #1e3a8a;
+            background-color: #f8faff;
+            padding: 15px;
+            border: 2px solid #1e3a8a;
+        }
+        
+        .priority-level {
+            text-align: center;
+            margin: 10px 0;
+            font-size: 11pt;
+            font-weight: bold;
+            color: #dc2626;
+        }
+        
+        .greeting {
+            margin-bottom: 1.5cm;
+            font-weight: bold;
+            font-size: 12pt;
+        }
+        
+        .body-content {
+            text-align: justify;
+            margin-bottom: 2cm;
+        }
+        
+        .paragraph {
+            margin-bottom: 1.2cm;
+            text-indent: 1.5cm;
+            line-height: 1.6;
+        }
+        
+        .context-section {
+            background-color: #f8faff;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #1e3a8a;
+        }
+        
+        .context-title {
+            font-weight: bold;
+            color: #1e3a8a;
+            margin-bottom: 10px;
+        }
+        
+        .bullet-points {
+            margin: 1cm 0 1cm 2.5cm;
+            list-style-type: none;
+        }
+        
+        .bullet-points li {
+            margin-bottom: 0.8cm;
+            position: relative;
+            padding-left: 15px;
+        }
+        
+        .bullet-points li::before {
+            content: "▪ ";
+            color: #1e3a8a;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+        
+        .urgency-box {
+            background-color: #fef3c7;
+            border: 2px solid #f59e0b;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .contact-availability {
+            background-color: #ecfdf5;
+            border: 1px solid #10b981;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .closing {
+            margin-top: 2cm;
+            margin-bottom: 2cm;
+            font-weight: normal;
+        }
+        
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2cm;
+        }
+        
+        .signature-block {
+            width: 45%;
+            text-align: center;
+        }
+        
+        .signature-line {
+            border-top: 2px solid #000;
+            margin: 15px 0;
+            padding-top: 10px;
+            font-size: 11pt;
+            font-weight: bold;
+        }
+        
+        .date-signature {
+            margin-bottom: 40px;
+            text-align: center;
+            font-style: italic;
+        }
+        
+        .attachments {
+            margin-top: 3cm;
+            padding: 15px;
+            background-color: #f8faff;
+            border: 1px solid #1e3a8a;
+        }
+        
+        .attachments-title {
+            font-weight: bold;
+            color: #1e3a8a;
+            margin-bottom: 10px;
+        }
+        
+        .footer {
+            margin-top: 2cm;
+            padding-top: 15px;
+            border-top: 2px solid #e5e7eb;
+            font-size: 9pt;
+            color: #6b7280;
+            text-align: center;
+        }
+        
+        .confidentiality-notice {
+            background-color: #fef2f2;
+            border: 1px solid #ef4444;
+            padding: 10px;
+            margin: 20px 0;
+            font-size: 10pt;
+            text-align: center;
+            color: #dc2626;
+            font-style: italic;
+        }
+        
+        .print-export-section {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .action-button {
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .action-button:hover {
+            background: linear-gradient(135deg, #1e40af, #2563eb);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        @media print {
+            .print-export-section {
+                display: none;
+            }
+            
+            body {
+                padding: 0;
+            }
+            
+            .page-break {
+                page-break-before: always;
+            }
+        }
+        
+        .editable {
+            background-color: #f0f9ff;
+            border: 1px dashed #1e3a8a;
+            padding: 3px 6px;
+            border-radius: 4px;
+            min-width: 100px;
+            display: inline-block;
+            transition: all 0.2s ease;
+        }
+        
+        .editable:hover {
+            background-color: #dbeafe;
+            border-style: solid;
+        }
+        
+        .editable:focus {
+            background-color: #fff;
+            outline: 2px solid #3b82f6;
+            border-color: #3b82f6;
+        }
+        
+        .required-field {
+            border-color: #ef4444;
+            background-color: #fef2f2;
+        }
+        
+        .template-info {
+            background-color: #f0f9ff;
+            border: 1px solid #3b82f6;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+        
+        .template-title {
+            font-weight: bold;
+            color: #1e3a8a;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-export-section">
+        <button class="action-button" onclick="window.print()">📄 Imprimer/PDF</button>
+        <button class="action-button" onclick="validateForm()">✓ Vérifier</button>
+    </div>
+    
+    <div class="template-info">
+        <div class="template-title">📋 MODÈLE PROFESSIONNEL DE DEMANDE D'AUDIENCE MINISTÉRIELLE</div>
+        <div style="font-size: 11pt; color: #374151;">
+            Cliquez sur les zones bleues pour personnaliser votre demande. Tous les champs marqués sont obligatoires.
+        </div>
+    </div>
+    
+    <div class="document-header">
+        <div class="sender-info">
+            <div><strong><span class="editable required-field" contenteditable="true">[NOM, Prénom du demandeur]</span></strong></div>
+            <div><span class="editable" contenteditable="true">[Fonction/Qualité]</span></div>
+            <div><span class="editable" contenteditable="true">[Organisation/Entreprise]</span></div>
+            <div><span class="editable" contenteditable="true">[Adresse complète]</span></div>
+            <div><span class="editable" contenteditable="true">[Code Postal, Ville]</span></div>
+            <div><strong>Tél. :</strong> <span class="editable required-field" contenteditable="true">[+226 XX XX XX XX]</span></div>
+            <div><strong>Email :</strong> <span class="editable required-field" contenteditable="true">[adresse@email.com]</span></div>
+        </div>
+        
+        <div class="sender-logo">
+            <div style="font-size: 16pt; margin-bottom: 10px;">🇧🇫</div>
+            <div><span class="editable" contenteditable="true">[LOGO/SIGLE]</span></div>
+        </div>
+        
+        <div class="reference-info">
+            <div class="reference-box">
+                <div><strong>Réf. :</strong> <span class="editable" contenteditable="true">[DA/2024/XXX]</span></div>
+                <div><strong>N° Dossier :</strong> <span class="editable" contenteditable="true">[si applicable]</span></div>
+            </div>
+            <div style="font-style: italic;">
+                <span class="editable required-field" contenteditable="true">Ouagadougou, le [JJ/MM/AAAA]</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="recipient">
+        <div class="recipient-title">
+            À <span class="editable required-field" contenteditable="true">Son Excellence Monsieur/Madame [NOM Prénom]</span>
+        </div>
+        <div class="recipient-address">
+            <div><strong><span class="editable required-field" contenteditable="true">[Titre du Ministre]</span></strong></div>
+            <div><span class="editable required-field" contenteditable="true">[Ministère de ...]</span></div>
+            <div>03 BP 7012 Ouagadougou 03</div>
+            <div>BURKINA FASO</div>
+        </div>
+    </div>
+    
+    <div class="subject">
+        <strong>OBJET : DEMANDE D'AUDIENCE MINISTÉRIELLE</strong>
+    </div>
+    
+    <div class="priority-level">
+        <span class="editable" contenteditable="true">[PRIORITÉ : NORMALE / URGENTE / TRÈS URGENTE]</span>
+    </div>
+    
+    <div class="greeting">
+        <span class="editable" contenteditable="true">Excellence Monsieur/Madame le/la Ministre,</span>
+    </div>
+    
+    <div class="body-content">
+        <div class="paragraph">
+            J'ai l'insigne honneur de solliciter très respectueusement de Votre Excellence, l'octroi d'une audience afin d'examiner avec Vous des questions stratégiques relatives au secteur <span class="editable required-field" contenteditable="true">[préciser le secteur/domaine d'activité]</span> et qui relèvent directement de Votre haute autorité ministérielle.
+        </div>
+        
+        <div class="context-section">
+            <div class="context-title">CONTEXTE ET JUSTIFICATION</div>
+            <div class="paragraph" style="text-indent: 0; margin-bottom: 0.8cm;">
+                En ma qualité de <span class="editable required-field" contenteditable="true">[préciser titre/fonction exacte]</span> au sein de <span class="editable required-field" contenteditable="true">[nom complet de l'organisation]</span>, organisme <span class="editable" contenteditable="true">[statut juridique : public/privé/associatif/international]</span>, je me permets de porter à Votre haute attention <span class="editable required-field" contenteditable="true">[description précise du sujet/problématique]</span> qui nécessite impérativement Votre éclairage, Votre arbitrage et Votre soutien institutionnel.
+            </div>
+        </div>
+        
+        <div class="paragraph">
+            Cette rencontre me donnerait l'opportunité de soumettre à Votre appréciation et de débattre avec Vous des points suivants :
+        </div>
+        
+        <ul class="bullet-points">
+            <li><span class="editable required-field" contenteditable="true">[Point stratégique n°1 - Enjeu principal]</span></li>
+            <li><span class="editable" contenteditable="true">[Point n°2 - Propositions/Solutions]</span></li>
+            <li><span class="editable" contenteditable="true">[Point n°3 - Partenariats/Collaborations]</span></li>
+            <li><span class="editable" contenteditable="true">[Point n°4 - Aspects budgétaires/techniques si applicable]</span></li>
+        </ul>
+        
+        <div class="urgency-box">
+            <strong>CARACTÈRE D'URGENCE :</strong><br>
+            <span class="editable" contenteditable="true">[Expliquer brièvement pourquoi cette audience revêt un caractère urgent ou stratégique, échéances à respecter, opportunités à saisir, etc.]</span>
+        </div>
+        
+        <div class="paragraph">
+            Les enjeux abordés s'inscrivent pleinement dans les orientations stratégiques définies par Votre département ministériel et contribueront significativement à <span class="editable" contenteditable="true">[impact attendu/bénéfices pour le secteur/pays]</span>.
+        </div>
+        
+        <div class="contact-availability">
+            <strong>📞 DISPONIBILITÉS ET CONTACT :</strong><br>
+            Parfaitement conscient(e) de Vos nombreuses et importantes obligations, je demeure entièrement à Votre disposition pour convenir d'un rendez-vous selon Votre agenda. Je peux me rendre disponible dans un délai de <span class="editable" contenteditable="true">[24h/48h/1 semaine]</span> à compter de Votre convocation.<br><br>
+            <strong>Contact prioritaire :</strong> <span class="editable" contenteditable="true">[numéro téléphone direct]</span> | <span class="editable" contenteditable="true">[email professionnel]</span>
+        </div>
+    </div>
+    
+    <div class="closing">
+        En espérant que ma requête retiendra favorablement Votre attention, je Vous prie d'agréer, <span class="editable" contenteditable="true">Excellence Monsieur/Madame le/la Ministre</span>, l'expression de ma très haute et respectueuse considération.
+    </div>
+    
+    <div class="signature-section">
+        <div class="signature-block">
+            <div class="date-signature">
+                <span class="editable" contenteditable="true">Ouagadougou, le [Date]</span>
+            </div>
+            <div style="height: 60px; margin: 20px 0;"></div>
+            <div class="signature-line">
+                <span class="editable required-field" contenteditable="true">[Signature manuscrite]</span><br>
+                <strong><span class="editable required-field" contenteditable="true">[NOM, Prénom]</span></strong><br>
+                <span class="editable" contenteditable="true">[Titre/Fonction]</span>
+            </div>
+        </div>
+        
+        <div class="signature-block">
+            <div style="font-size: 11pt; padding: 15px; background-color: #f8faff; border-radius: 5px;">
+                <strong>📋 SUIVI ADMINISTRATIF</strong><br>
+                <div style="margin-top: 10px; text-align: left;">
+                    □ Accusé de réception<br>
+                    □ Transmission cabinet<br>
+                    □ Convocation émise<br>
+                    □ RDV programmé le : ___/___/___
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="attachments">
+        <div class="attachments-title">📎 PIÈCES JOINTES :</div>
+        <div style="margin-left: 20px; margin-top: 10px;">
+            <div>□ <span class="editable" contenteditable="true">[CV/Notice biographique]</span></div>
+            <div>□ <span class="editable" contenteditable="true">[Note de présentation de l'organisation]</span></div>
+            <div>□ <span class="editable" contenteditable="true">[Documents techniques/dossiers de référence]</span></div>
+            <div>□ <span class="editable" contenteditable="true">[Autres pièces justificatives]</span></div>
+        </div>
+    </div>
+    
+    <div class="confidentiality-notice">
+        ⚠️ DOCUMENT CONFIDENTIEL - Usage strictement professionnel
+    </div>
+    
+    <div class="footer">
+        <em>Document généré le <script>document.write(new Date().toLocaleDateString('fr-FR'));</script></em><br>
+        <strong>République du Burkina Faso - Unité, Travail, Progrès</strong>
+    </div>
+
+    <script>
+        function validateForm() {
+            const requiredFields = document.querySelectorAll('.required-field');
+            let missingFields = [];
+            
+            requiredFields.forEach((field, index) => {
+                if (field.textContent.trim().startsWith('[') && field.textContent.trim().endsWith(']')) {
+                    missingFields.push(field);
+                    field.style.backgroundColor = '#fef2f2';
+                    field.style.borderColor = '#ef4444';
+                }
+            });
+            
+            if (missingFields.length > 0) {
+                alert(`⚠️ Veuillez remplir ${missingFields.length} champ(s) obligatoire(s) avant de finaliser votre demande.`);
+                missingFields[0].focus();
+            } else {
+                alert('✅ Votre demande d\'audience est prête ! Vous pouvez l\'imprimer ou l\'exporter en PDF.');
+            }
+        }
+        
+        // Auto-focus sur le premier champ obligatoire
+        document.addEventListener('DOMContentLoaded', function() {
+            const firstRequired = document.querySelector('.required-field');
+            if (firstRequired) {
+                firstRequired.focus();
+            }
+        });
+        
+        // Validation en temps réel des champs obligatoires
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('required-field')) {
+                if (!e.target.textContent.trim().startsWith('[') || !e.target.textContent.trim().endsWith(']')) {
+                    e.target.style.backgroundColor = '#f0fdf4';
+                    e.target.style.borderColor = '#10b981';
+                } else {
+                    e.target.style.backgroundColor = '#fef2f2';
+                    e.target.style.borderColor = '#ef4444';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
