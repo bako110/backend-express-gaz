@@ -4,5 +4,6 @@ const distributorController = require('../../controllers/distributeur/distributo
 
 router.get('/:distributorId', distributorController.getDistributor);
 router.get('/:distributorId/orders', distributorController.getOrders);
+router.post('/assign', distributorController.assignDelivery);
 
 module.exports = router;

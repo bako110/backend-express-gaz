@@ -33,4 +33,6 @@ router.get('/historique/:clientId', async (req, res) => {
 
 router.put('/:orderId/status', CommandeController.confirmOrder);
 
+router.get('/en-cours/:clientId', CommandeController.getOrdersEnLivraison)
+
 module.exports = router;

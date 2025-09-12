@@ -46,3 +46,36 @@ exports.getOrders = async (req, res) => {
   }
 };
 
+exports.assignDelivery = async (req, res) => {
+  try {
+    const { distributorId, orderId, driverId, driverName, driverPhone } = req.body;
+
+    // Vérification des données obligatoires
+    if (!distributorId || !orderId || !driverId) {
+      return res.status(400).json({
+        success: false,
+        error: "distributorId, orderId et driverId sont requis."
+      });
+    }
+
+    // Appel du service
+    const { distributorDelivery, driverDelivery } =
+      await DistributorService.assignDelivery(distributorId, orderId, driverId, driverName, driverPhone);
+
+    // Réponse avec les 2 enregistrements
+    res.status(201).json({
+      success: true,
+      message: "Livraison assignée avec succès.",
+      data: {
+        distributorDelivery,
+        driverDelivery
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+

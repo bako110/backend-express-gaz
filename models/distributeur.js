@@ -46,18 +46,20 @@ const distributorSchema = new mongoose.Schema({
 
   // ------------------- Deliveries -------------------
   deliveries: [
-    {
-      orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
-      clientName: { type: String, required: true },
-      driver: { type: String, required: true },
-      driverPhone: { type: String, required: true },
-      status: { type: String, enum: ['en_route', 'livre'], default: 'en_route' },
-      startTime: { type: Date },
-      estimatedArrival: { type: Date },
-      progress: { type: Number, default: 0 },   // pourcentage 0-100
-      total: { type: Number, required: true },
-    }
-  ],
+  {
+    orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
+    clientName: { type: String, required: true },
+    driverId: { type: mongoose.Schema.Types.ObjectId, ref: 'Livreur', required: false}, // Référence au livreur
+    driverName: { type: String, required: true }, // Nom du livreur (optionnel, pour affichage)
+    driverPhone: { type: String, required: true }, // Téléphone du livreur (optionnel, pour affichage)
+    status: { type: String, enum: ['en_route', 'livre'], default: 'en_route' },
+    startTime: { type: Date },
+    estimatedArrival: { type: Date },
+    progress: { type: Number, default: 0 }, // Pourcentage 0-100
+    total: { type: Number, required: true },
+  }
+]
+
 }, { timestamps: true });
 
 // ------------------- AJOUTER L'INDEX ICI -------------------

@@ -7,7 +7,8 @@ const productRoutes = require('./routes/distributeur/productRoute')
 const searchRoutes = require('./routes/searchdistributor');
 const orderRoutes = require('./routes/orderRoutes');
 const orderRoutesdistributeur = require('./routes/distributeur/distributorRoute');
-const livreurRoutes = require('./routes/livreur/livreurRoute')
+const livreurRoutes = require('./routes/livreur/livreurRoute');
+const walletRoutes = require('./routes/wallet/walletRoutes');
 
 
 const app = express();
@@ -29,7 +30,7 @@ app.use('/api/distributors', searchRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/distributeurs/orders', orderRoutesdistributeur);
 app.use('/api/livreur', livreurRoutes)
-
+app.use('/api/wallet', walletRoutes)
 
 // Route test
 app.get('/', (req, res) => {
