@@ -11,12 +11,14 @@
   "license": "ISC",
   "description": "��#\u0000 \u0000b\u0000a\u0000c\u0000k\u0000e\u0000n\u0000d\u0000-\u0000e\u0000x\u0000p\u0000r\u0000e\u0000s\u0000s\u0000-\u0000g\u0000a\u0000z\u0000\r\u0000 \u0000",
   "dependencies": {
+    "axios": "^1.12.2",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.18.0"
+    "mongoose": "^8.18.0",
+    "node-fetch": "^3.3.2"
   },
   "repository": {
     "type": "git",

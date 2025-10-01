@@ -1,7 +1,7 @@
 const UserService = require('../services/authService');
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'secret123'; // ⚠️ À changer en prod
+const JWT_SECRET = process.env.JWT_SECRET || 'secret123'; // ⚠️ change en prod
 const JWT_EXPIRES_IN = '7d'; // Durée de validité du token
 
 class AuthController {
@@ -16,17 +16,24 @@ class AuthController {
         return res.status(400).json({ message: 'Tous les champs sont requis' });
       }
 
-      const { user, profile } = await UserService.registerUser({ name, phone, pin, userType });
+      const { user, profile } = await UserService.registerUser({
+        name,
+        phone,
+        pin,
+        userType,
+      });
 
-      console.log("Utilisateur créé :", { user, profile });
+      console.log('Utilisateur créé :', { user, profile });
 
-      res.status(201).json({ 
-        message: 'Inscription réussie', 
-        user, 
-        profile 
+      res.status(201).json({
+        message: 'Inscription réussie',
+        user,
+        profile,
       });
     } catch (error) {
-      res.status(400).json({ message: error.message || 'Erreur lors de l’inscription' });
+      res
+        .status(400)
+        .json({ message: error.message || 'Erreur lors de l’inscription' });
     }
   }
 
@@ -35,33 +42,49 @@ class AuthController {
   // ====================
   static async login(req, res) {
     try {
-      const { userId, pin } = req.body;
+      // 🔹 le front envoie latitude / longitude, pas "location" direct
+      const { userId, pin, latitude, longitude } = req.body;
 
       if (!userId || !pin) {
-        return res.status(400).json({ message: 'Le userId et le PIN sont requis' });
+        return res
+          .status(400)
+          .json({ message: 'Le userId et le PIN sont requis' });
       }
 
-      const { user, profile, token: existingToken } = await UserService.loginWithPin({ userId, pin });
+      // 🔹 On passe latitude/longitude au service
+      const { user, profile, token: existingToken } =
+        await UserService.loginWithPin({
+          userId,
+          pin,
+          latitude,
+          longitude,
+        });
 
       if (!user) {
-        return res.status(401).json({ message: 'PIN incorrect ou utilisateur introuvable' });
+        return res
+          .status(401)
+          .json({ message: 'PIN incorrect ou utilisateur introuvable' });
       }
 
       // Génération du token si non fourni par le service
-      const token = existingToken || jwt.sign(
-        { id: user.id, userType: user.userType },
-        JWT_SECRET,
-        { expiresIn: JWT_EXPIRES_IN }
-      );
+      const token =
+        existingToken ||
+        jwt.sign(
+          { id: user.id, userType: user.userType },
+          JWT_SECRET,
+          { expiresIn: JWT_EXPIRES_IN }
+        );
 
       res.status(200).json({
         message: 'Connexion réussie',
-        user,
+        user, // 🔹 inclut déjà lastLocation depuis UserService
         profile,
         token,
       });
     } catch (error) {
-      res.status(400).json({ message: error.message || 'Erreur lors de la connexion' });
+      res
+        .status(400)
+        .json({ message: error.message || 'Erreur lors de la connexion' });
     }
   }
 
@@ -70,32 +93,47 @@ class AuthController {
   // ====================
   static async loginWithPhone(req, res) {
     try {
-      const { phone, pin } = req.body;
+      const { phone, pin, latitude, longitude } = req.body;
 
       if (!phone || !pin) {
-        return res.status(400).json({ message: 'Le téléphone et le PIN sont requis' });
+        return res
+          .status(400)
+          .json({ message: 'Le téléphone et le PIN sont requis' });
       }
 
-      const { user, profile, token: existingToken } = await UserService.loginWithPhone({ phone, pin });
+      // 🔹 On passe latitude/longitude au service
+      const { user, profile, token: existingToken } =
+        await UserService.loginWithPhone({
+          phone,
+          pin,
+          latitude,
+          longitude,
+        });
 
       if (!user) {
-        return res.status(401).json({ message: 'Téléphone ou PIN incorrect' });
+        return res
+          .status(401)
+          .json({ message: 'Téléphone ou PIN incorrect' });
       }
 
-      const token = existingToken || jwt.sign(
-        { id: user.id, userType: user.userType },
-        JWT_SECRET,
-        { expiresIn: JWT_EXPIRES_IN }
-      );
+      const token =
+        existingToken ||
+        jwt.sign(
+          { id: user.id, userType: user.userType },
+          JWT_SECRET,
+          { expiresIn: JWT_EXPIRES_IN }
+        );
 
       res.status(200).json({
         message: 'Connexion réussie',
-        user,
+        user, // 🔹 inclut déjà lastLocation depuis UserService
         profile,
         token,
       });
     } catch (error) {
-      res.status(400).json({ message: error.message || 'Erreur lors de la connexion' });
+      res
+        .status(400)
+        .json({ message: error.message || 'Erreur lors de la connexion' });
     }
   }
 }

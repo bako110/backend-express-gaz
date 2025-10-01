@@ -3,6 +3,7 @@ const Client = require('../models/client');
 const Distributor = require('../models/distributeur');
 const Livreur = require('../models/livreur');
 const crypto = require('crypto');
+const axios = require('axios');
 const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret123';
@@ -104,14 +105,48 @@ class UserService {
   }
 
   // ------------------- LOGIN AVEC PIN -------------------
-  static async loginWithPin({ userId, pin }) {
+  static async loginWithPin({ userId, pin, latitude, longitude }) {
     const user = await User.findById(userId).select('+pin');
-    if (!user) return { success: false, message: "Utilisateur non trouvé." };
+    if (!user) return { success: false, message: 'Utilisateur non trouvé.' };
 
     const isMatch = await user.matchPin(pin);
-    if (!isMatch) return { success: false, message: "Code PIN incorrect." };
+    if (!isMatch) return { success: false, message: 'Code PIN incorrect.' };
 
-    const token = jwt.sign({ id: user._id, userType: user.userType }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    // 🔹 Reverse-geocoding si latitude/longitude fournis
+    let city = null;
+    let country = null;
+    if (latitude && longitude) {
+      try {
+        const geoRes = await axios.get(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
+        );
+        city =
+          geoRes.data.address.city ||
+          geoRes.data.address.town ||
+          geoRes.data.address.village ||
+          null;
+        country = geoRes.data.address.country || null;
+      } catch (err) {
+        console.error('Erreur reverse geocoding:', err.message);
+      }
+
+      // 🔹 Mettre à jour la localisation de l’utilisateur
+      user.lastLocation = {
+        latitude,
+        longitude,
+        city,
+        country,
+        updatedAt: new Date(),
+      };
+      await user.save();
+    }
+
+    const token = jwt.sign(
+      { id: user._id, userType: user.userType },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
+    );
+
     const profileData = await this.getProfile(user);
 
     return {
@@ -123,21 +158,55 @@ class UserService {
         phone: user.phone,
         userType: user.userType,
         photo: user.photo,
+        lastLocation: user.lastLocation || null, // 🔹 On renvoie la localisation
       },
       profile: profileData,
     };
   }
 
   // ------------------- LOGIN AVEC PHONE -------------------
-  static async loginWithPhone({ phone, pin }) {
+  static async loginWithPhone({ phone, pin, latitude, longitude }) {
     const formattedPhone = phone.replace(/[^\d+]/g, '');
     const user = await User.findOne({ phone: formattedPhone }).select('+pin');
-    if (!user) return { success: false, message: "Utilisateur non trouvé." };
+    if (!user) return { success: false, message: 'Utilisateur non trouvé.' };
 
     const isMatch = await user.matchPin(pin);
-    if (!isMatch) return { success: false, message: "Code PIN incorrect." };
+    if (!isMatch) return { success: false, message: 'Code PIN incorrect.' };
 
-    const token = jwt.sign({ id: user._id, userType: user.userType }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    // 🔹 Reverse-geocoding si latitude/longitude fournis
+    let city = null;
+    let country = null;
+    if (latitude && longitude) {
+      try {
+        const geoRes = await axios.get(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
+        );
+        city =
+          geoRes.data.address.city ||
+          geoRes.data.address.town ||
+          geoRes.data.address.village ||
+          null;
+        country = geoRes.data.address.country || null;
+      } catch (err) {
+        console.error('Erreur reverse geocoding:', err.message);
+      }
+
+      user.lastLocation = {
+        latitude,
+        longitude,
+        city,
+        country,
+        updatedAt: new Date(),
+      };
+      await user.save();
+    }
+
+    const token = jwt.sign(
+      { id: user._id, userType: user.userType },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
+    );
+
     const profileData = await this.getProfile(user);
 
     return {
@@ -149,6 +218,7 @@ class UserService {
         phone: user.phone,
         userType: user.userType,
         photo: user.photo,
+        lastLocation: user.lastLocation || null,
       },
       profile: profileData,
     };

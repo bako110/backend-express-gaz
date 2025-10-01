@@ -30,11 +30,18 @@ const userSchema = new mongoose.Schema(
       type: String, // URL de l’avatar généré automatiquement
       default: null,
     },
+
+    // ✅ Géolocalisation (latitude, longitude, quartier)
+    lastLocation: {
+      latitude: { type: Number },
+      longitude: { type: Number },
+      neighborhood: { type: String, default: null }, // Nouveau champ
+    },
   },
   { timestamps: true }
 );
 
-// Hash du PIN avant sauvegarde
+// ✅ Hash du PIN avant sauvegarde
 userSchema.pre('save', async function (next) {
   if (!this.isModified('pin')) return next();
   const salt = await bcrypt.genSalt(10);
@@ -42,7 +49,7 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
-// Vérification du PIN
+// ✅ Vérification du PIN
 userSchema.methods.matchPin = async function (enteredPin) {
   return await bcrypt.compare(enteredPin, this.pin);
 };

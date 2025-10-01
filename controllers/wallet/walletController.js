@@ -22,7 +22,7 @@ exports.getTransactions = async (req, res) => {
     const { livreurId } = req.params;
     const transactions = await walletService.getTransactions(livreurId);
 
-    res.json({ success: true, transactions });
+    res.json({ success: true, transactions });;
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
   }
