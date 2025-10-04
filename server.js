@@ -10,6 +10,7 @@ const orderRoutesdistributeur = require('./routes/distributeur/distributorRoute'
 const livreurRoutes = require('./routes/livreur/livreurRoute');
 const walletRoutes = require('./routes/wallet/walletRoutes');
 const locationRoutes = require('./routes/locationRoute');
+// const feeRoutes = require('./routes/frais');
 
 
 const app = express();
@@ -33,6 +34,7 @@ app.use('/api/distributeurs/orders', orderRoutesdistributeur);
 app.use('/api/livreur', livreurRoutes)
 app.use('/api/wallet', walletRoutes)
 app.use('/api/location', locationRoutes);
+// app.use('/api/fees', feeRoutes);
 
 // Route test
 app.get('/api/ok', (req, res) => {
@@ -43,3 +45,4 @@ app.get('/api/ok', (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Serveur démarré sur le port ${PORT}`);
 });
+, 

@@ -12,12 +12,25 @@ const ProductService = {
     return distributor.products[distributor.products.length - 1]; // retourne le dernier produit ajouté
   },
 
-  // 📋 Récupérer les produits d'un distributeur
-  async getProducts(distributorId) {
-    const distributor = await Distributeur.findById(distributorId);
-    if (!distributor) throw new Error("Distributeur introuvable");
+  // 📋 Récupérer tous les produits de tous les distributeurs avec infos user
+  async getAllProducts() {
+    // On récupère tous les distributeurs et on populate le user
+    const distributors = await Distributeur.find().populate('user').lean();
 
-    return distributor.products;
+    const allProducts = [];
+    distributors.forEach(distributor => {
+      distributor.products.forEach(product => {
+        allProducts.push({
+          ...product,
+          distributorId: distributor._id,
+          distributorName: distributor.user?.name || null,
+          zone: distributor.zone || null,
+          lastLocation: distributor.user?.lastLocation || null
+        });
+      });
+    });
+
+    return allProducts;
   },
 
   // ✏️ Mettre à jour un produit
@@ -62,25 +75,6 @@ const ProductService = {
 
     return product;
   },
-
-  // 📋 Récupérer tous les produits de tous les distributeurs
-  async getAllProducts() {
-    const distributors = await Distributeur.find().populate('user', 'name').lean();
-
-    let allProducts = [];
-    distributors.forEach(d => {
-      d.products.forEach(p => {
-        allProducts.push({
-          ...p,
-          distributorId: d._id,
-          distributorName: d.user?.name || null,
-          zone: d.zone || null
-        });
-      });
-    });
-
-    return allProducts;
-  }
 };
 
 module.exports = ProductService;

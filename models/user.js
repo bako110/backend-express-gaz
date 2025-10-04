@@ -27,15 +27,47 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
     photo: {
-      type: String, // URL de l’avatar généré automatiquement
+      type: String, // URL de l'avatar généré automatiquement
       default: null,
     },
 
-    // ✅ Géolocalisation (latitude, longitude, quartier)
+    // ✅ Géolocalisation complète avec toutes les données
     lastLocation: {
-      latitude: { type: Number },
-      longitude: { type: Number },
-      neighborhood: { type: String, default: null }, // Nouveau champ
+      latitude: { 
+        type: Number,
+        min: -90,
+        max: 90,
+      },
+      longitude: { 
+        type: Number,
+        min: -180,
+        max: 180,
+      },
+      neighborhood: { 
+        type: String, 
+        default: 'Quartier non identifié' // 🔥 Valeur par défaut au lieu de null
+      },
+      timestamp: { 
+        type: Date, 
+        default: Date.now // 🔥 Timestamp de la dernière mise à jour
+      },
+      // 🆕 Optionnel : données GPS supplémentaires (si tu veux les stocker)
+      accuracy: { 
+        type: Number, 
+        default: null 
+      },
+      altitude: { 
+        type: Number, 
+        default: null 
+      },
+      heading: { 
+        type: Number, 
+        default: null 
+      },
+      speed: { 
+        type: Number, 
+        default: null 
+      },
     },
   },
   { timestamps: true }
@@ -52,6 +84,20 @@ userSchema.pre('save', async function (next) {
 // ✅ Vérification du PIN
 userSchema.methods.matchPin = async function (enteredPin) {
   return await bcrypt.compare(enteredPin, this.pin);
+};
+
+// 🆕 Méthode helper pour mettre à jour la localisation (optionnel)
+userSchema.methods.updateLocation = function (locationData) {
+  this.lastLocation = {
+    latitude: locationData.latitude,
+    longitude: locationData.longitude,
+    neighborhood: locationData.neighborhood || 'Quartier non identifié',
+    timestamp: new Date(),
+    accuracy: locationData.accuracy || null,
+    altitude: locationData.altitude || null,
+    heading: locationData.heading || null,
+    speed: locationData.speed || null,
+  };
 };
 
 module.exports = mongoose.model('User', userSchema);
