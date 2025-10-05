@@ -32,32 +32,38 @@ const clientSchema = new mongoose.Schema({
 
   // ------------------- Commandes -------------------
   orders: [
-    {
-      products: [
-        {
-          name: { type: String, required: true },
-          type: { type: String, required: true },
-          quantity: { type: Number, required: true },
-          price: { type: Number, required: true },
-        }
-      ],
-      total: { type: Number, required: true },
-      orderTime: { type: Date, default: Date.now },
-      status: { 
-        type: String, 
-        enum: ['nouveau', 'confirme', 'en_livraison', 'livre', 'annule'], 
-        default: 'nouveau' 
-      },
-      priority: { type: String, enum: ['normal', 'high', 'urgent'], default: 'normal' },
-      address: { type: String },
-      clientName: { type: String },
-      clientPhone: { type: String },
+  {
+    products: [
+      {
+        name: { type: String, required: true },
+        type: { type: String, required: true },
+        quantity: { type: Number, required: true },
+        price: { type: Number, required: true },
+      }
+    ],
+    total: { type: Number, required: true },        // total = produits + livraison
+    orderTime: { type: Date, default: Date.now },
+    status: { 
+      type: String, 
+      enum: ['nouveau', 'confirme', 'en_livraison', 'livre', 'annule'], 
+      default: 'nouveau' 
+    },
+    priority: { type: String, enum: ['normal', 'high', 'urgent'], default: 'normal' },
+    address: { type: String },
+    clientName: { type: String },
+    clientPhone: { type: String },
 
-      // ------------------- Infos distributeur -------------------
-      distributorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Distributor' },
-      distributorName: { type: String },
-    }
-  ],
+    // ------------------- Infos distributeur -------------------
+    distributorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Distributor' },
+    distributorName: { type: String },
+
+    // ------------------- Livraison -------------------
+    delivery: { type: String, enum: ['oui', 'non'], default: 'non' },
+    deliveryFee: { type: Number, default: 0 },     // frais calculés dynamiquement
+    distance: { type: Number, default: 0 }         // distance km entre client et distributeur
+  }
+],
+
 
   // ------------------- Historique des commandes -------------------
   historiqueCommandes: [

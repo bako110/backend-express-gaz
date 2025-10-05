@@ -1,9 +1,8 @@
-// routes/deliveryRoutes.js
 const express = require('express');
 const router = express.Router();
-const controller = require('../controllers/deliveryController');
+const { getDeliveryInfo } = require('../controllers/frais');
 
-// POST /api/delivery/fee
-router.post('/', controller.calcDeliveryFee);
+// POST /api/delivery-info
+router.post('/', getDeliveryInfo);
 
 module.exports = router;

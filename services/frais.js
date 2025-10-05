@@ -1,124 +1,77 @@
 // services/deliveryService.js
-const NodeCache = require('node-cache');
-const cache = new NodeCache({ stdTTL: 60 * 5, checkperiod: 60 }); // cache 5 min
-
-function toRadians(deg) {
-  return deg * Math.PI / 180;
-}
-
-function haversineDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371; // km
-  const dLat = toRadians(lat2 - lat1);
-  const dLon = toRadians(lon2 - lon1);
-  const a = Math.sin(dLat / 2) ** 2 +
-            Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
-            Math.sin(dLon / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
+const User = require('../models/user');
+const Distributor = require('../models/distributeur'); // si tu as un modèle séparé
 
 /**
- * calcFee
- * @param {number} distanceKm
- * @param {object} options { ratePerKm, roundUp, minFee }
- * @returns {number} fee (integer)
+ * Calcule la distance entre le client et le distributeur et les frais de livraison
+ * @param {Number} clientLat
+ * @param {Number} clientLng
+ * @param {String} distributorId
+ * @returns {Object} { distance, deliveryFee }
  */
-function calcFee(distanceKm, options = {}) {
-  const {
-    ratePerKm = 100,
-    roundUp = true,
-    minFee = 100
-  } = options;
-
-  let fee = roundUp ? Math.ceil(distanceKm) * ratePerKm : distanceKm * ratePerKm;
-  fee = Math.round(fee);
-  if (fee < minFee) fee = minFee;
-  return fee;
-}
-
-/**
- * findNearestDistributor
- * @param {object} client {lat, lon}
- * @param {Array} distributors [{ id, lat, lon, meta }]
- * @returns {object} { distributor, distanceKm }
- */
-function findNearestDistributor(client, distributors) {
-  if (!Array.isArray(distributors) || distributors.length === 0) return null;
-
-  let best = null;
-  for (const d of distributors) {
-    const dist = haversineDistance(client.lat, client.lon, d.lat, d.lon);
-    if (!best || dist < best.distanceKm) {
-      best = { distributor: d, distanceKm: dist };
-    }
-  }
-  return best;
-}
-
-/**
- * getDeliveryFee
- * - client: {lat, lon}
- * - options: { distributors:[], distributorId?, ratePerKm, roundUp, minFee, useNearest }
- *
- * returns { distance_km, fee, currency, distributor }
- */
-async function getDeliveryFee(client, options = {}) {
-  if (!client || typeof client.lat !== 'number' || typeof client.lon !== 'number') {
-    throw new Error('Coordonnées du client invalides');
+async function calculateDelivery(clientLat, clientLng, distributorId) {
+  // Vérifie les paramètres
+  if (
+    typeof clientLat !== 'number' ||
+    typeof clientLng !== 'number' ||
+    !distributorId
+  ) {
+    throw new Error('Paramètres de livraison invalides');
   }
 
-  const {
-    distributors = [],           // liste de distributeurs {id, lat, lon, ...}
-    distributorId = null,        // si on veut forcer un distributeur
-    ratePerKm = 100,
-    roundUp = true,
-    minFee = 100,
-    useNearest = true,
-    currency = 'XOF'
-  } = options;
-
-  // Cache key : client coords + distributorId + rate + roundUp + minFee
-  const cacheKey = JSON.stringify({
-    client, distributorId, ratePerKm, roundUp, minFee, distributors: distributors.map(d => d.id || `${d.lat},${d.lon}`)
-  });
-  const cached = cache.get(cacheKey);
-  if (cached) return cached;
-
-  let chosen;
-  let distanceKm;
-
-  if (distributorId) {
-    chosen = distributors.find(d => (d.id || `${d.lat},${d.lon}`) === distributorId);
-    if (!chosen) throw new Error('Distributeur introuvable');
-    distanceKm = haversineDistance(client.lat, client.lon, chosen.lat, chosen.lon);
-  } else if (useNearest) {
-    const nearest = findNearestDistributor(client, distributors);
-    if (!nearest) throw new Error('Aucun distributeur disponible');
-    chosen = nearest.distributor;
-    distanceKm = nearest.distanceKm;
-  } else {
-    // Si pas de distributeur donné et pas useNearest -> erreur
-    throw new Error('Aucun distributeur sélectionné');
+  // 1️⃣ Récupère le document distributeur
+  const distributorDoc = await Distributor.findById(distributorId);
+  if (!distributorDoc || !distributorDoc.user) {
+    throw new Error('Distributeur introuvable');
   }
 
-  const fee = calcFee(distanceKm, { ratePerKm, roundUp, minFee });
+  // 2️⃣ Récupère le vrai User
+  const distributorUser = await User.findById(distributorDoc.user);
+  if (
+    !distributorUser ||
+    !distributorUser.lastLocation ||
+    typeof distributorUser.lastLocation.latitude !== 'number' ||
+    typeof distributorUser.lastLocation.longitude !== 'number'
+  ) {
+    throw new Error('Position du distributeur indisponible ou invalide');
+  }
 
-  const result = {
-    distance_km: Number(distanceKm.toFixed(3)),
-    fee,
-    currency,
-    distributor: chosen
-  };
+  const loc = distributorUser.lastLocation;
 
-  cache.set(cacheKey, result);
-  return result;
+  // Fonction Haversine pour calculer distance en km
+  function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // rayon de la Terre en km
+    const toRad = (deg) => (deg * Math.PI) / 180;
+
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  const distance = getDistance(
+    clientLat,
+    clientLng,
+    loc.latitude,
+    loc.longitude
+  );
+
+  // Calcul des frais de livraison (exemple : 500 FCFA/km)
+  const deliveryFee = Math.round(distance * 100);
+
+  // 🔹 Logs pour vérifier que le calcul est correct
+  console.log('=== Delivery calculation ===');
+  console.log('Client location:', clientLat, clientLng);
+  console.log('Distributor location:', loc.latitude, loc.longitude);
+  console.log('Distance (km):', distance);
+  console.log('Delivery Fee (FCFA):', deliveryFee);
+
+  return { distance, deliveryFee };
 }
 
-module.exports = {
-  haversineDistance,
-  calcFee,
-  findNearestDistributor,
-  getDeliveryFee,
-  // exposer cache pour tests si besoin
-  _cache: cache
-};
+module.exports = { calculateDelivery };

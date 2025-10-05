@@ -1,48 +1,19 @@
 // controllers/deliveryController.js
-const deliveryService = require('../services/deliveryService');
+const { calculateDelivery } = require('../services/frais');
 
-/**
- * POST /api/delivery/fee
- * Body:
- * {
- *   client: { lat: number, lon: number },
- *   distributors: [{ id?, lat, lon, name? }, ...],   // optionnel si distributorId fourni
- *   distributorId: string,                           // optionnel
- *   ratePerKm: number,                               // optional override
- *   roundUp: boolean,
- *   minFee: number,
- *   useNearest: boolean
- * }
- */
-async function calcDeliveryFee(req, res) {
+exports.getDeliveryInfo = async (req, res) => {
   try {
-    const body = req.body || {};
-    const client = body.client;
-    const distributors = body.distributors || [];
-    const options = {
-      distributorId: body.distributorId || null,
-      distributors,
-      ratePerKm: body.ratePerKm || 100,
-      roundUp: typeof body.roundUp === 'boolean' ? body.roundUp : true,
-      minFee: typeof body.minFee === 'number' ? body.minFee : 100,
-      useNearest: body.useNearest !== undefined ? !!body.useNearest : true,
-      currency: body.currency || 'XOF'
-    };
+    const { clientLat, clientLng, distributorId } = req.body;
 
-    if (!client || typeof client.lat !== 'number' || typeof client.lon !== 'number') {
-      return res.status(400).json({ error: 'client.lat et client.lon requis et numériques' });
+    if (!clientLat || !clientLng || !distributorId) {
+      return res.status(400).json({ message: 'Paramètres manquants' });
     }
 
-    // appel service
-    const result = await deliveryService.getDeliveryFee(client, options);
+    const result = await calculateDelivery(clientLat, clientLng, distributorId);
 
-    return res.json({ success: true, data: result });
+    res.json(result); // { distance, deliveryFee }
   } catch (err) {
-    console.error('calcDeliveryFee error:', err.message || err);
-    return res.status(500).json({ success: false, error: err.message || 'Erreur serveur' });
+    console.error('Erreur getDeliveryInfo:', err);
+    res.status(500).json({ message: err.message });
   }
-}
-
-module.exports = {
-  calcDeliveryFee
 };

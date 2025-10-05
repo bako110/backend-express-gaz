@@ -40,7 +40,11 @@ const distributorSchema = new mongoose.Schema({
       orderTime: { type: Date, default: Date.now },
       priority: { type: String, enum: ['normal', 'high', 'urgent'], default: 'normal' },
       status: { type: String, enum: ['nouveau', 'confirme', 'en_livraison', 'livre', 'annule'], default: 'nouveau' },
-      distance: { type: String },
+      delivery: { type: String, enum: ['oui', 'non'], default: 'non' },
+      deliveryFee: { type: Number, default: 0 },  // frais calculés dynamiquement
+      distance: { type: Number, default: 0 }      // distance km entre client et distributeur
+
+      
     }
   ],
 
