@@ -1,15 +1,14 @@
-// routes/walletRoutes.js
 const express = require('express');
 const router = express.Router();
 const walletController = require('../../controllers/wallet/walletController');
 
-// POST recharge/retrait
-router.post('/transaction', walletController.createTransaction);
+// 🔹 PATCH : recharge ou retrait
+router.patch('/:id/wallettransaction', walletController.updateWalletTransaction);
 
-// GET historique
-router.get('/transactions/:livreurId', walletController.getTransactions);
+// 🔹 GET : liste des transactions
+router.get('/:id/transactions', walletController.getTransactions);
 
-// GET solde
-router.get('/balance/:livreurId', walletController.getBalance);
+// 🔹 GET : solde du wallet
+router.get('/:id/balance', walletController.getBalance);
 
 module.exports = router;

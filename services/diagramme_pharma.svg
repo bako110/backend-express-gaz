@@ -1,0 +1,547 @@
+<svg viewBox="0 0 1800 2400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#333" />
+    </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#ff0000" />
+    </marker>
+  </defs>
+  
+  <!-- TITRE PRINCIPAL -->
+  <rect x="0" y="0" width="1800" height="120" fill="#1a1a2e" stroke="#000" stroke-width="2"/>
+  <text x="900" y="40" text-anchor="middle" font-size="32" font-weight="bold" fill="#fff">🏥 SYSTÈME PHARMACEUTIQUE BURKINA FASO - ARCHITECTURE COMPLÈTE</text>
+  <text x="900" y="75" text-anchor="middle" font-size="16" fill="#ffd700">3 ACTEURS : Clients 👥 | Pharmacies 💊 | Administrateurs 👨‍💼</text>
+  <text x="900" y="100" text-anchor="middle" font-size="14" fill="#90ee90">✅ Mise à jour obligatoire du stock | ⚡ Recherche ultra-rapide | 📊 Traçabilité totale</text>
+
+  <!-- ========== SECTION 1: UTILISATEURS (CLIENTS) ========== -->
+  <rect x="20" y="140" width="520" height="580" fill="#e8f4f8" stroke="#0066cc" stroke-width="4"/>
+  <text x="280" y="175" text-anchor="middle" font-size="20" font-weight="bold" fill="#0066cc">👥 CLIENTS / UTILISATEURS</text>
+  
+  <!-- user (table principale) -->
+  <rect x="40" y="200" width="280" height="240" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="40" y="200" width="280" height="35" fill="#4a90e2" stroke="#000" stroke-width="2"/>
+  <text x="180" y="223" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">user (COMPTE CLIENT)</text>
+  <text x="50" y="250" font-size="11" font-weight="bold">🔑 CP: id (UUID)</text>
+  <text x="50" y="270" font-size="10">numero_telephone (unique) 📱</text>
+  <text x="50" y="287" font-size="10">email (nullable)</text>
+  <text x="50" y="304" font-size="10">hash_mot_de_passe</text>
+  <text x="50" y="321" font-size="10">nom_complet</text>
+  <text x="50" y="338" font-size="10">date_naissance</text>
+  <text x="50" y="355" font-size="10">genre (homme/femme/autre)</text>
+  <text x="50" y="372" font-size="10">url_photo_profil</text>
+  <text x="50" y="389" font-size="10">est_verifie (validation OTP)</text>
+  <text x="50" y="406" font-size="10">est_actif</text>
+  <text x="50" y="423" font-size="10">cree_le, derniere_connexion</text>
+  
+  <!-- user_address -->
+  <rect x="40" y="460" width="280" height="140" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="40" y="460" width="280" height="30" fill="#4a90e2" stroke="#000" stroke-width="2"/>
+  <text x="180" y="480" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">user_address 📍</text>
+  <text x="50" y="505" font-size="11" font-weight="bold">🔑 CP: id</text>
+  <text x="50" y="522" font-size="11" font-weight="bold">🔗 CE: user_id → user</text>
+  <text x="50" y="542" font-size="10">ligne_adresse</text>
+  <text x="50" y="557" font-size="10">ville, region</text>
+  <text x="50" y="572" font-size="10" font-weight="bold">latitude, longitude (GPS) 🌍</text>
+  <text x="50" y="587" font-size="10">est_par_defaut (adresse principale)</text>
+  
+  <!-- user_search_history -->
+  <rect x="340" y="200" width="180" height="120" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="340" y="200" width="180" height="30" fill="#4a90e2" stroke="#000" stroke-width="2"/>
+  <text x="430" y="220" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">user_search_history</text>
+  <text x="348" y="245" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="348" y="262" font-size="10">🔗 CE: user_id</text>
+  <text x="348" y="279" font-size="9">requete_recherche</text>
+  <text x="348" y="294" font-size="9">CE: product_id (si trouvé)</text>
+  <text x="348" y="309" font-size="9">recherche_le</text>
+  
+  <!-- user_favorite_pharmacy -->
+  <rect x="340" y="340" width="180" height="120" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="340" y="340" width="180" height="30" fill="#4a90e2" stroke="#000" stroke-width="2"/>
+  <text x="430" y="360" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">user_favorite_pharmacy</text>
+  <text x="348" y="385" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="348" y="402" font-size="10">🔗 CE: user_id</text>
+  <text x="348" y="419" font-size="10">🔗 CE: pharmacy_location_id</text>
+  <text x="348" y="436" font-size="9">ajoute_le</text>
+  
+  <!-- notification_preference -->
+  <rect x="340" y="480" width="180" height="120" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="340" y="480" width="180" height="30" fill="#4a90e2" stroke="#000" stroke-width="2"/>
+  <text x="430" y="500" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">notification_preference</text>
+  <text x="348" y="525" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="348" y="542" font-size="10">🔗 CE: user_id</text>
+  <text x="348" y="559" font-size="9">sms_active</text>
+  <text x="348" y="574" font-size="9">whatsapp_actif</text>
+  <text x="348" y="589" font-size="9">email_actif</text>
+  
+  <!-- Relations -->
+  <line x1="180" y1="440" x2="180" y2="460" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="320" y1="260" x2="340" y2="260" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="320" y1="400" x2="340" y2="400" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="320" y1="540" x2="340" y2="540" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ========== SECTION 2: PHARMACIES ========== -->
+  <rect x="560" y="140" width="620" height="580" fill="#fff8e1" stroke="#ff9800" stroke-width="4"/>
+  <text x="870" y="175" text-anchor="middle" font-size="20" font-weight="bold" fill="#ff9800">💊 PHARMACIES (Gestion obligatoire du stock)</text>
+  
+  <!-- pharmacy -->
+  <rect x="580" y="200" width="260" height="180" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="580" y="200" width="260" height="35" fill="#ffa726" stroke="#000" stroke-width="2"/>
+  <text x="710" y="223" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">pharmacy (ENTREPRISE)</text>
+  <text x="590" y="250" font-size="11" font-weight="bold">🔑 CP: id</text>
+  <text x="590" y="270" font-size="10">nom_legal (raison sociale)</text>
+  <text x="590" y="287" font-size="10">nom_affichage (nom commercial)</text>
+  <text x="590" y="304" font-size="10">numero_licence (unique) 📋</text>
+  <text x="590" y="321" font-size="10">identifiant_fiscal (IFU)</text>
+  <text x="590" y="338" font-size="10">telephone, email</text>
+  <text x="590" y="355" font-size="10">statut (actif/suspendu)</text>
+  <text x="590" y="372" font-size="10">integre_le, verifie_le</text>
+  
+  <!-- pharmacy_location -->
+  <rect x="580" y="400" width="280" height="200" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="580" y="400" width="280" height="35" fill="#ffa726" stroke="#000" stroke-width="2"/>
+  <text x="720" y="423" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">pharmacy_location 📍</text>
+  <text x="590" y="450" font-size="11" font-weight="bold">🔑 CP: id</text>
+  <text x="590" y="467" font-size="11" font-weight="bold">🔗 CE: pharmacy_id → pharmacy</text>
+  <text x="590" y="487" font-size="10">nom (ex: "Centrale Ouaga")</text>
+  <text x="590" y="504" font-size="10">ligne_adresse</text>
+  <text x="590" y="521" font-size="10">ville, region</text>
+  <text x="590" y="538" font-size="10" font-weight="bold">latitude, longitude 🌍</text>
+  <text x="590" y="555" font-size="10">tel_contact, whatsapp</text>
+  <text x="590" y="572" font-size="10">heures_ouverture (JSON)</text>
+  <text x="590" y="589" font-size="10">est_actif</text>
+  
+  <!-- pharmacy_staff -->
+  <rect x="880" y="200" width="280" height="160" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="880" y="200" width="280" height="35" fill="#ffa726" stroke="#000" stroke-width="2"/>
+  <text x="1020" y="223" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">pharmacy_staff 👨‍⚕️</text>
+  <text x="890" y="250" font-size="11" font-weight="bold">🔑 CP: id</text>
+  <text x="890" y="267" font-size="11" font-weight="bold">🔗 CE: pharmacy_id</text>
+  <text x="890" y="284" font-size="11" font-weight="bold">🔗 CE: location_id (nullable)</text>
+  <text x="890" y="304" font-size="10">nom_complet, telephone, email</text>
+  <text x="890" y="321" font-size="10">poste (Pharmacien/Gérant/...)</text>
+  <text x="890" y="338" font-size="10">peut_modifier_inventaire 🔐</text>
+  <text x="890" y="355" font-size="10">est_actif</text>
+  
+  <!-- pharmacy_account -->
+  <rect x="880" y="380" width="280" height="140" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="880" y="380" width="280" height="35" fill="#ffa726" stroke="#000" stroke-width="2"/>
+  <text x="1020" y="403" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">pharmacy_account 🔐</text>
+  <text x="890" y="430" font-size="11" font-weight="bold">🔑 CP: id</text>
+  <text x="890" y="447" font-size="11" font-weight="bold">🔗 CE: staff_id → pharmacy_staff</text>
+  <text x="890" y="467" font-size="10">nom_utilisateur (unique)</text>
+  <text x="890" y="484" font-size="10">hash_mot_de_passe</text>
+  <text x="890" y="501" font-size="10">role (admin/gestionnaire/personnel)</text>
+  
+  <!-- inventory_update_log -->
+  <rect x="880" y="540" width="280" height="160" fill="#fff" stroke="#ff0000" stroke-width="3"/>
+  <rect x="880" y="540" width="280" height="35" fill="#ff5252" stroke="#000" stroke-width="2"/>
+  <text x="1020" y="563" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">inventory_update_log ⚠️</text>
+  <text x="890" y="590" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="890" y="607" font-size="10">🔗 CE: pharmacy_id</text>
+  <text x="890" y="624" font-size="10">🔗 CE: location_id</text>
+  <text x="890" y="641" font-size="10">🔗 CE: modifie_par (staff_id)</text>
+  <text x="890" y="658" font-size="10" font-weight="bold">derniere_maj_le 🕐</text>
+  <text x="890" y="675" font-size="10">nb_produits_modifies</text>
+  <text x="890" y="692" font-size="10" font-weight="bold">est_conforme (vrai/faux) ✅❌</text>
+  
+  <!-- Relations -->
+  <line x1="710" y1="380" x2="710" y2="400" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="840" y1="280" x2="880" y2="280" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="1020" y1="360" x2="1020" y2="380" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ========== SECTION 3: PRODUITS ========== -->
+  <rect x="20" y="750" width="760" height="620" fill="#f3e5f5" stroke="#9c27b0" stroke-width="4"/>
+  <text x="400" y="785" text-anchor="middle" font-size="20" font-weight="bold" fill="#9c27b0">💊 CATALOGUE DES MÉDICAMENTS</text>
+  
+  <!-- product (TABLE CENTRALE) -->
+  <rect x="40" y="810" width="320" height="280" fill="#fff" stroke="#9c27b0" stroke-width="3"/>
+  <rect x="40" y="810" width="320" height="40" fill="#ab47bc" stroke="#000" stroke-width="2"/>
+  <text x="200" y="838" text-anchor="middle" font-size="15" font-weight="bold" fill="#fff">product ⭐ (MÉDICAMENT)</text>
+  <text x="50" y="868" font-size="11" font-weight="bold">🔑 CP: id</text>
+  <text x="50" y="888" font-size="11" font-weight="bold">🔗 CE: fabricant_id</text>
+  <text x="50" y="905" font-size="11" font-weight="bold">🔗 CE: categorie_id</text>
+  <text x="50" y="922" font-size="11" font-weight="bold">🔗 CE: code_atc_id</text>
+  <line x1="50" y1="932" x2="340" y2="932" stroke="#000" stroke-width="2"/>
+  <text x="50" y="952" font-size="11" font-weight="bold">sku (code unique) 🏷️</text>
+  <text x="50" y="972" font-size="11" font-weight="bold">nom (ex: "Paracétamol")</text>
+  <text x="50" y="989" font-size="10">nom_generique</text>
+  <text x="50" y="1006" font-size="10">marque</text>
+  <text x="50" y="1023" font-size="10">forme (comprimé/sirop/...)</text>
+  <text x="50" y="1040" font-size="10">dosage (500mg, 1g...)</text>
+  <text x="50" y="1057" font-size="10">necessite_ordonnance (oui/non)</text>
+  <text x="50" y="1074" font-size="10">est_actif, cree_le</text>
+  
+  <!-- product_search_index -->
+  <rect x="380" y="810" width="380" height="140" fill="#fff" stroke="#9c27b0" stroke-width="3"/>
+  <rect x="380" y="810" width="380" height="35" fill="#ab47bc" stroke="#000" stroke-width="2"/>
+  <text x="570" y="833" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">product_search_index 🔍 (RECHERCHE RAPIDE)</text>
+  <text x="390" y="860" font-size="11" font-weight="bold">🔑 CP: product_id → product</text>
+  <text x="390" y="880" font-size="10" font-weight="bold">vecteur_recherche (tsvector PostgreSQL)</text>
+  <text x="390" y="897" font-size="10">nom_normalise (minuscule, sans accents)</text>
+  <text x="390" y="914" font-size="10">mots_cles (JSON: synonymes, alias)</text>
+  <text x="390" y="931" font-size="9" fill="#666">Ex: "paracetamol, doliprane, efferalgan..."</text>
+  
+  <!-- manufacturer -->
+  <rect x="40" y="1110" width="200" height="110" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="40" y="1110" width="200" height="30" fill="#ab47bc" stroke="#000" stroke-width="2"/>
+  <text x="140" y="1131" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">manufacturer</text>
+  <text x="50" y="1156" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="50" y="1173" font-size="9">nom</text>
+  <text x="50" y="1188" font-size="9">pays</text>
+  <text x="50" y="1203" font-size="9">certification</text>
+  
+  <!-- product_category -->
+  <rect x="260" y="1110" width="200" height="125" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="260" y="1110" width="200" height="30" fill="#ab47bc" stroke="#000" stroke-width="2"/>
+  <text x="360" y="1131" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">product_category</text>
+  <text x="270" y="1156" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="270" y="1173" font-size="10">🔗 CE: parent_id (auto)</text>
+  <text x="270" y="1190" font-size="9">nom</text>
+  <text x="270" y="1205" font-size="9">slug</text>
+  <text x="270" y="1220" font-size="9">niveau (1,2,3...)</text>
+  
+  <!-- atc_code -->
+  <rect x="480" y="1110" width="180" height="110" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="480" y="1110" width="180" height="30" fill="#ab47bc" stroke="#000" stroke-width="2"/>
+  <text x="570" y="1131" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">atc_code</text>
+  <text x="490" y="1156" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="490" y="1173" font-size="9">code (ex: "N02BE01")</text>
+  <text x="490" y="1188" font-size="9">libelle_fr</text>
+  <text x="490" y="1203" font-size="9">niveau</text>
+  
+  <!-- product_batch -->
+  <rect x="380" y="970" width="380" height="120" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="380" y="970" width="380" height="30" fill="#ab47bc" stroke="#000" stroke-width="2"/>
+  <text x="570" y="991" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">product_batch (LOTS)</text>
+  <text x="390" y="1016" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="390" y="1033" font-size="10" font-weight="bold">🔗 CE: product_id → product</text>
+  <text x="390" y="1050" font-size="9">numero_lot (unique)</text>
+  <text x="390" y="1065" font-size="9" font-weight="bold">date_expiration (péremption) ⏰</text>
+  <text x="390" y="1080" font-size="9">date_fabrication</text>
+  
+  <!-- product_alternative -->
+  <rect x="40" y="1240" width="280" height="110" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="40" y="1240" width="280" height="30" fill="#ab47bc" stroke="#000" stroke-width="2"/>
+  <text x="180" y="1261" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">product_alternative (GÉNÉRIQUES)</text>
+  <text x="50" y="1286" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="50" y="1303" font-size="9">🔗 CE: product_id</text>
+  <text x="50" y="1318" font-size="9">🔗 CE: produit_alternatif_id</text>
+  <text x="50" y="1333" font-size="9">niveau_equivalence (identique/similaire)</text>
+  
+  <!-- Relations produits -->
+  <line x1="140" y1="1090" x2="140" y2="1110" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="360" y1="1090" x2="360" y2="1110" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="360" y1="950" x2="380" y2="950" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="360" y1="1030" x2="380" y2="1030" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="180" y1="1090" x2="180" y2="1240" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ========== SECTION 4: INVENTAIRE (LE CŒUR!) ========== -->
+  <rect x="20" y="1400" width="1160" height="580" fill="#e8f5e9" stroke="#2e7d32" stroke-width="5"/>
+  <text x="600" y="1440" text-anchor="middle" font-size="22" font-weight="bold" fill="#2e7d32">🎯 INVENTAIRE - CŒUR DU SYSTÈME (Qui a quoi?)</text>
+  
+  <!-- pharmacy_inventory (TABLE ULTRA-CENTRALE) -->
+  <rect x="40" y="1470" width="480" height="320" fill="#fff" stroke="#ff0000" stroke-width="4"/>
+  <rect x="40" y="1470" width="480" height="45" fill="#43a047" stroke="#000" stroke-width="2"/>
+  <text x="280" y="1500" text-anchor="middle" font-size="16" font-weight="bold" fill="#fff">pharmacy_inventory ⭐⭐⭐ (STOCK EN TEMPS RÉEL)</text>
+  <text x="55" y="1535" font-size="12" font-weight="bold">🔑 CP: id</text>
+  <text x="55" y="1558" font-size="12" font-weight="bold">🔗 CE: location_id → pharmacy_location</text>
+  <text x="55" y="1578" font-size="12" font-weight="bold">🔗 CE: product_id → product</text>
+  <text x="55" y="1598" font-size="12" font-weight="bold">🔗 CE: batch_id → product_batch</text>
+  <line x1="55" y1="1608" x2="500" y2="1608" stroke="#000" stroke-width="3"/>
+  
+  <text x="55" y="1633" font-size="12" font-weight="bold">📦 quantite (stock total)</text>
+  <text x="55" y="1653" font-size="11">quantite_reservee</text>
+  <text x="55" y="1670" font-size="11" font-weight="bold">quantite_disponible (quantite - reservee)</text>
+  <text x="55" y="1690" font-size="12" font-weight="bold">💰 prix_fcfa (prix unitaire)</text>
+  <text x="55" y="1710" font-size="11">prix_promo_fcfa</text>
+  <text x="55" y="1727" font-size="11">quantite_min (seuil alerte)</text>
+  <text x="55" y="1744" font-size="11" font-weight="bold">derniere_maj_le ⏰</text>
+  <text x="55" y="1761" font-size="11">modifie_par (CE: staff_id)</text>
+  <text x="55" y="1778" font-size="11" font-weight="bold">est_disponible (vrai/faux) ✅❌</text>
+  
+  <!-- inventory_movement -->
+  <rect x="540" y="1470" width="320" height="180" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="540" y="1470" width="320" height="35" fill="#43a047" stroke="#000" stroke-width="2"/>
+  <text x="700" y="1494" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">inventory_movement (HISTORIQUE)</text>
+  <text x="550" y="1523" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="550" y="1543" font-size="10">🔗 CE: inventory_id</text>
+  <text x="550" y="1560" font-size="10">🔗 CE: modifie_par (staff_id)</text>
+  <text x="550" y="1577" font-size="9">type_mouvement (ENTRÉE/SORTIE/AJUSTEMENT)</text>
+  <text x="550" y="1592" font-size="9">changement_quantite (+50, -10...)</text>
+  <text x="550" y="1607" font-size="9">raison (vente/restockage/péremption)</text>
+  <text x="550" y="1622" font-size="9">numero_reference</text>
+  <text x="550" y="1637" font-size="9">cree_le</text>
+  
+  <!-- inventory_alert -->
+  <rect x="540" y="1670" width="320" height="160" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="540" y="1670" width="320" height="35" fill="#ff9800" stroke="#000" stroke-width="2"/>
+  <text x="700" y="1694" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">inventory_alert 🔔 (ALERTES)</text>
+  <text x="550" y="1723" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="550" y="1740" font-size="10">🔗 CE: inventory_id</text>
+  <text x="550" y="1757" font-size="9">type_alerte (STOCK_BAS/PÉRIMÉ/...)</text>
+  <text x="550" y="1772" font-size="9">severite (INFO/AVERTISSEMENT/CRITIQUE)</text>
+  <text x="550" y="1787" font-size="9">message</text>
+  <text x="550" y="1802" font-size="9">est_resolu, resolu_le</text>
+  <text x="550" y="1817" font-size="9">cree_le</text>
+  
+  <!-- price_history -->
+  <rect x="880" y="1470" width="280" height="140" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="880" y="1470" width="280" height="35" fill="#43a047" stroke="#000" stroke-width="2"/>
+  <text x="1020" y="1494" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">price_history (HISTORIQUE PRIX)</text>
+  <text x="890" y="1523" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="890" y="1540" font-size="10">🔗 CE: inventory_id</text>
+  <text x="890" y="1557" font-size="9">ancien_prix_fcfa</text>
+  <text x="890" y="1572" font-size="9">nouveau_prix_fcfa</text>
+  <text x="890" y="1587" font-size="9">raison_changement</text>
+  <text x="890" y="1602" font-size="9">modifie_le, modifie_par</text>
+  
+  <!-- offer -->
+  <rect x="880" y="1630" width="280" height="150" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="880" y="1630" width="280" height="35" fill="#ff5722" stroke="#000" stroke-width="2"/>
+  <text x="1020" y="1654" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">offer (PROMOTIONS) 🎁</text>
+  <text x="890" y="1683" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="890" y="1700" font-size="10">🔗 CE: inventory_id</text>
+  <text x="890" y="1717" font-size="9">pourcentage_reduction</text>
+  <text x="890" y="1732" font-size="9">prix_promo_fcfa</text>
+  <text x="890" y="1747" font-size="9">valide_du, valide_au</text>
+  <text x="890" y="1762" font-size="9">cree_par (CE: staff_id)</text>
+  
+  <!-- stock_reservation -->
+  <rect x="40" y="1810" width="360" height="150" fill="#fff" stroke="#ff0000" stroke-width="3"/>
+  <rect x="40" y="1810" width="360" height="35" fill="#e91e63" stroke="#000" stroke-width="2"/>
+  <text x="220" y="1834" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">stock_reservation 🔒 (RÉSERVATIONS)</text>
+  <text x="50" y="1863" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="50" y="1880" font-size="10">🔗 CE: inventory_id</text>
+  <text x="50" y="1897" font-size="10">🔗 CE: user_id → user</text>
+  <text x="50" y="1914" font-size="9">quantite_reservee</text>
+  <text x="50" y="1929" font-size="9">statut (EN_ATTENTE/CONFIRMÉ/ANNULÉ)</text>
+  <text x="50" y="1944" font-size="9">expire_le (24h max)</text>
+  
+  <!-- Relations inventaire -->
+  <line x1="520" y1="1560" x2="540" y2="1560" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="520" y1="1730" x2="540" y2="1730" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="520" y1="1550" x2="880" y2="1550" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="520" y1="1700" x2="880" y2="1700" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="220" y1="1790" x2="220" y2="1810" stroke="#ff0000" stroke-width="3" marker-end="url(#arrow-red)"/>
+
+  <!-- ========== SECTION 5: ADMINISTRATION ========== -->
+  <rect x="1200" y="140" width="580" height="580" fill="#fce4ec" stroke="#c2185b" stroke-width="4"/>
+  <text x="1490" y="175" text-anchor="middle" font-size="20" font-weight="bold" fill="#c2185b">👨‍💼 ADMINISTRATION DU SYSTÈME</text>
+  
+  <!-- admin_user -->
+  <rect x="1220" y="200" width="280" height="180" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="1220" y="200" width="280" height="35" fill="#ec407a" stroke="#000" stroke-width="2"/>
+  <text x="1360" y="223" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">admin_user (SUPER ADMIN)</text>
+  <text x="1230" y="250" font-size="11" font-weight="bold">🔑 CP: id</text>
+  <text x="1230" y="270" font-size="10">nom_utilisateur (unique)</text>
+  <text x="1230" y="287" font-size="10">hash_mot_de_passe</text>
+  <text x="1230" y="304" font-size="10">nom_complet, email</text>
+  <text x="1230" y="321" font-size="10" font-weight="bold">role (SUPER_ADMIN/MODÉRATEUR)</text>
+  <text x="1230" y="338" font-size="10">permissions (JSON)</text>
+  <text x="1230" y="355" font-size="10">est_actif</text>
+  <text x="1230" y="372" font-size="10">derniere_connexion</text>
+  
+  <!-- compliance_check -->
+  <rect x="1220" y="400" width="280" height="160" fill="#fff" stroke="#ff0000" stroke-width="3"/>
+  <rect x="1220" y="400" width="280" height="35" fill="#ff5252" stroke="#000" stroke-width="2"/>
+  <text x="1360" y="423" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">compliance_check ⚠️ (CONFORMITÉ)</text>
+  <text x="1230" y="450" font-size="11" font-weight="bold">🔑 CP: id</text>
+  <text x="1230" y="470" font-size="10">🔗 CE: pharmacy_id</text>
+  <text x="1230" y="487" font-size="10">🔗 CE: verifie_par (admin_id)</text>
+  <text x="1230" y="504" font-size="10" font-weight="bold">type_verification (MAJ_INVENTAIRE/LICENCE)</text>
+  <text x="1230" y="521" font-size="10">statut (CONFORME/NON_CONFORME)</text>
+  <text x="1230" y="538" font-size="10">notes</text>
+  <text x="1230" y="555" font-size="10">verifie_le</text>
+  
+  <!-- penalty -->
+  <rect x="1520" y="400" width="240" height="150" fill="#fff" stroke="#ff0000" stroke-width="3"/>
+  <rect x="1520" y="400" width="240" height="35" fill="#d32f2f" stroke="#000" stroke-width="2"/>
+  <text x="1640" y="423" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">penalty 🚫 (SANCTIONS)</text>
+  <text x="1530" y="450" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="1530" y="467" font-size="10">🔗 CE: pharmacy_id</text>
+  <text x="1530" y="484" font-size="9">type_penalite (AVERTISSEMENT/SUSPENSION)</text>
+  <text x="1530" y="499" font-size="9">raison</text>
+  <text x="1530" y="514" font-size="9">applique_par (CE: admin_id)</text>
+  <text x="1530" y="529" font-size="9">applique_le, leve_le</text>
+  <text x="1530" y="544" font-size="9">est_actif</text>
+  
+  <!-- audit_log -->
+  <rect x="1220" y="580" width="540" height="130" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="1220" y="580" width="540" height="30" fill="#ec407a" stroke="#000" stroke-width="2"/>
+  <text x="1490" y="601" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">audit_log 📋 (JOURNAL D'AUDIT)</text>
+  <text x="1230" y="626" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="1230" y="643" font-size="9">type_acteur (UTILISATEUR/PHARMACIE/ADMIN)</text>
+  <text x="1230" y="658" font-size="9">id_acteur (CE polymorphique)</text>
+  <text x="1230" y="673" font-size="9">action (CRÉER/MODIFIER/SUPPRIMER/CONNEXION/RECHERCHE...)</text>
+  <text x="1230" y="688" font-size="9">type_entite, id_entite, modifications (JSON), adresse_ip, cree_le</text>
+  
+  <!-- Relations admin -->
+  <line x1="1500" y1="450" x2="1520" y2="450" stroke="#ff0000" stroke-width="2" marker-end="url(#arrow-red)"/>
+
+  <!-- ========== SECTION 6: NOTIFICATIONS ========== -->
+  <rect x="1200" y="750" width="580" height="270" fill="#fff3e0" stroke="#ef6c00" stroke-width="4"/>
+  <text x="1490" y="785" text-anchor="middle" font-size="20" font-weight="bold" fill="#ef6c00">🔔 SYSTÈME DE NOTIFICATIONS</text>
+  
+  <!-- notification -->
+  <rect x="1220" y="810" width="360" height="190" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="1220" y="810" width="360" height="35" fill="#ff9800" stroke="#000" stroke-width="2"/>
+  <text x="1400" y="833" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">notification (TOUTES)</text>
+  <text x="1230" y="860" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="1230" y="877" font-size="10">type_destinataire (UTILISATEUR/PHARMACIE)</text>
+  <text x="1230" y="894" font-size="10">id_destinataire</text>
+  <text x="1230" y="911" font-size="9">type_notification (ALERTE_STOCK/PROMO/...)</text>
+  <text x="1230" y="926" font-size="9">canal (SMS/EMAIL/WHATSAPP/PUSH)</text>
+  <text x="1230" y="941" font-size="9">titre, message</text>
+  <text x="1230" y="956" font-size="9">statut (EN_ATTENTE/ENVOYÉ/ÉCHOUÉ)</text>
+  <text x="1230" y="971" font-size="9">envoye_le, lu_le</text>
+  <text x="1230" y="986" font-size="9">cree_le</text>
+  
+  <!-- sms_log -->
+  <rect x="1600" y="810" width="160" height="100" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="1600" y="810" width="160" height="30" fill="#ff9800" stroke="#000" stroke-width="2"/>
+  <text x="1680" y="831" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">sms_log 📱</text>
+  <text x="1610" y="856" font-size="9" font-weight="bold">🔑 CP: id</text>
+  <text x="1610" y="871" font-size="8">🔗 CE: notification_id</text>
+  <text x="1610" y="886" font-size="8">numero_telephone</text>
+  <text x="1610" y="901" font-size="8">fournisseur, cout</text>
+  
+  <!-- Relations notifications -->
+  <line x1="1580" y1="860" x2="1600" y2="860" stroke="#333" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ========== SECTION 7: ANALYTICS ========== -->
+  <rect x="1200" y="1050" width="580" height="320" fill="#e3f2fd" stroke="#1565c0" stroke-width="4"/>
+  <text x="1490" y="1085" text-anchor="middle" font-size="20" font-weight="bold" fill="#1565c0">📊 ANALYTICS &amp; RAPPORTS</text>
+  
+  <!-- search_analytics -->
+  <rect x="1220" y="1110" width="260" height="130" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="1220" y="1110" width="260" height="30" fill="#42a5f5" stroke="#000" stroke-width="2"/>
+  <text x="1350" y="1131" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">search_analytics</text>
+  <text x="1230" y="1156" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="1230" y="1173" font-size="9">requete_recherche (mot recherché)</text>
+  <text x="1230" y="1188" font-size="9">nb_resultats</text>
+  <text x="1230" y="1203" font-size="9">localisation_utilisateur (GPS)</text>
+  <text x="1230" y="1218" font-size="9">recherche_le</text>
+  <text x="1230" y="1233" font-size="9">trouve (vrai/faux)</text>
+  
+  <!-- pharmacy_performance -->
+  <rect x="1500" y="1110" width="260" height="140" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="1500" y="1110" width="260" height="30" fill="#42a5f5" stroke="#000" stroke-width="2"/>
+  <text x="1630" y="1131" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">pharmacy_performance</text>
+  <text x="1510" y="1156" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="1510" y="1173" font-size="9">🔗 CE: pharmacy_id</text>
+  <text x="1510" y="1188" font-size="9">periode (JOURNALIER/HEBDO/MENSUEL)</text>
+  <text x="1510" y="1203" font-size="9">nb_recherches_total</text>
+  <text x="1510" y="1218" font-size="9">niveau_stock_moyen</text>
+  <text x="1510" y="1233" font-size="9">taux_conformite_maj (%)</text>
+  
+  <!-- product_demand -->
+  <rect x="1220" y="1260" width="540" height="100" fill="#fff" stroke="#000" stroke-width="2"/>
+  <rect x="1220" y="1260" width="540" height="30" fill="#42a5f5" stroke="#000" stroke-width="2"/>
+  <text x="1490" y="1281" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">product_demand (DEMANDE PAR PRODUIT)</text>
+  <text x="1230" y="1306" font-size="10" font-weight="bold">🔑 CP: id</text>
+  <text x="1230" y="1323" font-size="9">🔗 CE: product_id</text>
+  <text x="1230" y="1338" font-size="9">nb_recherches, region, debut_periode, fin_periode</text>
+
+  <!-- ========== RELATIONS MAJEURES (FLÈCHES ROUGES) ========== -->
+  
+  <!-- User → Inventory (via reservation) -->
+  <line x1="280" y1="720" x2="220" y2="1810" stroke="#ff0000" stroke-width="4" stroke-dasharray="10,5" marker-end="url(#arrow-red)"/>
+  <text x="260" y="1200" font-size="13" font-weight="bold" fill="#ff0000">CLIENT</text>
+  <text x="260" y="1220" font-size="11" fill="#ff0000">cherche</text>
+  
+  <!-- Pharmacy → Inventory -->
+  <line x1="720" y1="720" x2="280" y2="1470" stroke="#ff0000" stroke-width="4" marker-end="url(#arrow-red)"/>
+  <text x="500" y="1100" font-size="13" font-weight="bold" fill="#ff0000">PHARMACIE</text>
+  <text x="480" y="1120" font-size="11" fill="#ff0000">met à jour stock</text>
+  
+  <!-- Product → Inventory -->
+  <line x1="360" y1="1370" x2="280" y2="1470" stroke="#ff0000" stroke-width="4" marker-end="url(#arrow-red)"/>
+  <text x="320" y="1420" font-size="13" font-weight="bold" fill="#ff0000">PRODUIT</text>
+  
+  <!-- Admin → Pharmacy -->
+  <line x1="1220" y1="450" x2="1180" y2="450" stroke="#ff0000" stroke-width="3" stroke-dasharray="8,4"/>
+  <line x1="1180" y1="450" x2="900" y2="600" stroke="#ff0000" stroke-width="3" stroke-dasharray="8,4" marker-end="url(#arrow-red)"/>
+  <text x="1050" y="520" font-size="12" font-weight="bold" fill="#ff0000">ADMIN surveille</text>
+
+  <!-- ========== ENCADRÉ: WORKFLOW MISE À JOUR OBLIGATOIRE ========== -->
+  <rect x="420" y="2010" width="700" height="360" fill="#ffe082" stroke="#ff0000" stroke-width="5"/>
+  <text x="770" y="2045" text-anchor="middle" font-size="18" font-weight="bold" fill="#d32f2f">⚠️ WORKFLOW: MISE À JOUR OBLIGATOIRE DU STOCK</text>
+  <line x1="440" y1="2060" x2="1100" y2="2060" stroke="#000" stroke-width="2"/>
+  
+  <text x="450" y="2090" font-size="14" font-weight="bold">1️⃣ OBLIGATION DE MISE À JOUR (Quotidienne)</text>
+  <rect x="460" y="2100" width="640" height="50" fill="#fff" stroke="#000" stroke-width="1"/>
+  <text x="470" y="2120" font-size="11">• Chaque pharmacie DOIT mettre à jour son stock au moins 1x/jour</text>
+  <text x="470" y="2138" font-size="11">• inventory_update_log enregistre chaque modification</text>
+  
+  <text x="450" y="2175" font-size="14" font-weight="bold">2️⃣ DÉTECTION AUTOMATIQUE (CRON JOB)</text>
+  <rect x="460" y="2185" width="640" height="50" fill="#fff" stroke="#000" stroke-width="1"/>
+  <text x="470" y="2205" font-size="11">• Système vérifie chaque nuit: derniere_maj_le &lt; 24h ?</text>
+  <text x="470" y="2223" font-size="11">• Si NON → compliance_check.statut = NON_CONFORME</text>
+  
+  <text x="450" y="2260" font-size="14" font-weight="bold">3️⃣ SANCTIONS PROGRESSIVES</text>
+  <rect x="460" y="2270" width="640" height="70" fill="#fff" stroke="#ff0000" stroke-width="2"/>
+  <text x="470" y="2290" font-size="11">• 1er jour de retard → <tspan font-weight="bold" fill="#ff9800">ALERTE SMS</tspan> au gérant</text>
+  <text x="470" y="2308" font-size="11">• 3 jours de retard → <tspan font-weight="bold" fill="#ff5722">AVERTISSEMENT</tspan> (penalty table)</text>
+  <text x="470" y="2326" font-size="11">• 7 jours de retard → <tspan font-weight="bold" fill="#d32f2f">SUSPENSION</tspan> (masqué des recherches!)</text>
+  
+  <text x="450" y="2360" font-size="14" font-weight="bold">4️⃣ RÉACTIVATION</text>
+  <rect x="460" y="2370" width="640" height="35" fill="#c8e6c9" stroke="#2e7d32" stroke-width="2"/>
+  <text x="470" y="2390" font-size="11">• Pharmacie met à jour → Système réactive automatiquement ✅</text>
+
+  <!-- ========== ENCADRÉ: FLUX DE RECHERCHE CLIENT ========== -->
+  <rect x="1200" y="1400" width="580" height="300" fill="#e1f5fe" stroke="#0277bd" stroke-width="4"/>
+  <text x="1490" y="1435" text-anchor="middle" font-size="18" font-weight="bold" fill="#0277bd">🔍 FLUX: CLIENT CHERCHE "PARACÉTAMOL"</text>
+  <line x1="1220" y1="1450" x2="1760" y2="1450" stroke="#000" stroke-width="2"/>
+  
+  <text x="1230" y="1480" font-size="13" font-weight="bold">1. Recherche intelligente</text>
+  <text x="1240" y="1498" font-size="10">→ product_search_index (recherche texte intégral)</text>
+  <text x="1240" y="1513" font-size="10">→ Recherche "paracetamol" = trouve aussi "doliprane", "efferalgan"</text>
+  
+  <text x="1230" y="1540" font-size="13" font-weight="bold">2. Vérification stock disponible</text>
+  <text x="1240" y="1558" font-size="10">→ pharmacy_inventory WHERE product_id IN (...)</text>
+  <text x="1240" y="1573" font-size="10">→ Filtre: est_disponible = vrai AND quantite_disponible &gt; 0</text>
+  
+  <text x="1230" y="1600" font-size="13" font-weight="bold">3. Calcul distance (GPS)</text>
+  <text x="1240" y="1618" font-size="10">→ user_address (lat/lng) VS pharmacy_location (lat/lng)</text>
+  <text x="1240" y="1633" font-size="10">→ Tri par distance croissante</text>
+  
+  <text x="1230" y="1660" font-size="13" font-weight="bold">4. Résultat affiché</text>
+  <text x="1240" y="1678" font-size="10">✅ Pharmacie A - 500 FCFA - 1.2km - Ouverte - ☎️ 70 XX XX XX</text>
+  <text x="1240" y="1693" font-size="10">✅ Pharmacie B - 450 FCFA 🎁 - 2.8km - Fermée (ouvre 8h)</text>
+
+  <!-- NOTE FINALE -->
+  <rect x="20" y="2010" width="380" height="200" fill="#f3e5f5" stroke="#6a1b9a" stroke-width="3"/>
+  <text x="210" y="2040" text-anchor="middle" font-size="15" font-weight="bold" fill="#6a1b9a">🎯 FORCES DU SYSTÈME</text>
+  <text x="30" y="2070" font-size="11" font-weight="bold">✅ Recherche ultra-rapide</text>
+  <text x="40" y="2088" font-size="9">→ Index texte intégral + cache Redis</text>
+  <text x="30" y="2110" font-size="11" font-weight="bold">✅ Stock en temps réel</text>
+  <text x="40" y="2128" font-size="9">→ Mise à jour obligatoire contrôlée</text>
+  <text x="30" y="2150" font-size="11" font-weight="bold">✅ Géolocalisation précise</text>
+  <text x="40" y="2168" font-size="9">→ GPS sur chaque pharmacie + utilisateur</text>
+  <text x="30" y="2190" font-size="11" font-weight="bold">✅ Traçabilité totale</text>
+  <text x="40" y="2208" font-size="9">→ Journal d'audit + historiques complets</text>
+
+  <!-- INDICES TECHNIQUES -->
+  <rect x="1140" y="2010" width="640" height="360" fill="#f5f5f5" stroke="#000" stroke-width="3"/>
+  <text x="1460" y="2040" text-anchor="middle" font-size="16" font-weight="bold">🔧 INDICES &amp; OPTIMISATIONS TECHNIQUES</text>
+  <line x1="1160" y1="2055" x2="1760" y2="2055" stroke="#000" stroke-width="1"/>
+  
+  <text x="1160" y="2085" font-size="12" font-weight="bold">📌 INDICES CRITIQUES (PostgreSQL)</text>
+  <text x="1170" y="2105" font-size="10">product_search_index.vecteur_recherche (Index GIN)</text>
+  <text x="1170" y="2122" font-size="10">pharmacy_inventory (location_id, product_id, est_disponible)</text>
+  <text x="1170" y="2139" font-size="10">pharmacy_location (latitude, longitude) - Index spatial GiST</text>
+  <text x="1170" y="2156" font-size="10">user_search_history (user_id, recherche_le DESC)</text>
+  
+  <text x="1160" y="2185" font-size="12" font-weight="bold">⚡ PERFORMANCES</text>
+  <text x="1170" y="2205" font-size="10">• Cache Redis pour recherches populaires (TTL: 5 min)</text>
+  <text x="1170" y="2222" font-size="10">• Elasticsearch pour recherche texte intégral (sync avec PostgreSQL)</text>
+  <text x="1170" y="2239" font-size="10">• CDN pour images produits</text>
+  
+  <text x="1160" y="2268" font-size="12" font-weight="bold">🔔 TÂCHES AUTOMATIQUES (CRON)</text>
+  <text x="1170" y="2288" font-size="10">• 00:00 - Vérification conformité pharmacies</text>
+  <text x="1170" y="2305" font-size="10">• 01:00 - Détection produits périmés (batch.date_expiration)</text>
+  <text x="1170" y="2322" font-size="10">• 06:00 - Alertes stock bas (quantite &lt; quantite_min)</text>
+  <text x="1170" y="2339" font-size="10">• 12:00 - Génération rapports analytics quotidiens</text>
+  <text x="1170" y="2356" font-size="10">• Temps réel - Notifications SMS/WhatsApp (via file d'attente)</text>
+</svg>

@@ -25,7 +25,7 @@ async function getLivreurs(status) {
   try {
     let filter = {};
     if (status) {
-      filter.status = status; // ex: "disponible"
+      filter.status = status;
     }
     const livreurs = await Livreur.find(filter);
     return livreurs;
@@ -37,7 +37,7 @@ async function getLivreurs(status) {
 /**
  * Récupérer les commandes d'un livreur par status
  * @param {String} livreurId
- * @param {String} status
+ * @param {String} status - pending, confirmed, preparing, in_transit, delivered, canceled
  * @returns {Promise<Array>}
  */
 async function getDeliveriesByStatus(livreurId, status) {
@@ -47,13 +47,30 @@ async function getDeliveriesByStatus(livreurId, status) {
       throw new Error('Livreur non trouvé');
     }
 
-    // Filtrer les commandes selon le status demandé
-    const filteredDeliveries = livreur.todaysDeliveries.filter(
-      delivery => delivery.status === status
-    );
+    // Combiner todaysDeliveries et deliveryHistory pour une recherche complète
+    const allDeliveries = [
+      ...livreur.todaysDeliveries,
+      ...livreur.deliveryHistory
+    ];
+
+    // Filtrer par status
+    const filteredDeliveries = allDeliveries
+      .filter(delivery => delivery.status === status)
+      .map(delivery => ({
+        orderId: delivery.orderId,
+        clientName: delivery.clientName,
+        clientPhone: delivery.clientPhone,
+        address: delivery.address,
+        status: delivery.status,
+        distance: delivery.distance || 'N/A',
+        estimatedTime: delivery.estimatedTime || 'N/A',
+        total: delivery.total,
+        scheduledAt: delivery.scheduledAt || delivery.deliveredAt,
+        products: delivery.products || [],
+        priority: delivery.priority || 'normal'
+      }));
 
     return filteredDeliveries;
-
   } catch (error) {
     throw new Error('Erreur lors de la récupération des commandes : ' + error.message);
   }
@@ -71,54 +88,58 @@ async function getAllDeliveries(livreurId) {
       throw new Error('Livreur non trouvé');
     }
 
-    // Retourner toutes les commandes du jour
-    return livreur.todaysDeliveries;
+    // Combiner toutes les livraisons
+    const allDeliveries = [
+      ...livreur.todaysDeliveries,
+      ...livreur.deliveryHistory
+    ];
 
+    return allDeliveries.map(delivery => ({
+      orderId: delivery.orderId,
+      clientName: delivery.clientName,
+      clientPhone: delivery.clientPhone,
+      address: delivery.address,
+      status: delivery.status,
+      distance: delivery.distance || 'N/A',
+      estimatedTime: delivery.estimatedTime || 'N/A',
+      total: delivery.total,
+      scheduledAt: delivery.scheduledAt || delivery.deliveredAt,
+      products: delivery.products || [],
+      priority: delivery.priority || 'normal'
+    }));
   } catch (error) {
     throw new Error('Erreur lors de la récupération des commandes : ' + error.message);
   }
 }
 
 /**
- * Récupérer le dashboard complet d'un livreur
+ * Récupérer l'historique complet d'un livreur
  * @param {String} livreurId
  * @returns {Promise<Object>}
  */
 async function getLivreurDashboard(livreurId) {
   try {
-    // Récupérer le livreur et peupler la référence user
     const livreur = await Livreur.findById(livreurId)
       .populate('user', 'name phone photo userType')
       .exec();
 
     if (!livreur) throw new Error('Livreur non trouvé');
 
-    // Extraire les livraisons d'aujourd'hui
-    const todaysDeliveries = livreur.todaysDeliveries.map(delivery => ({
-      id: delivery._id,
-      client: delivery.clientName,
-      telephone: delivery.clientPhone,
-      adresse: delivery.address,
-      statut: delivery.status,
-      distance: delivery.distance || 'N/A',
-      estimatedTime: delivery.estimatedTime || 'N/A',
-      total: delivery.total,
-      scheduledAt: delivery.scheduledAt,
-    }));
-
-    // Extraire l'historique
+    // Extraire uniquement l'historique des livraisons
     const deliveryHistory = livreur.deliveryHistory.map(delivery => ({
-      id: delivery._id,
-      client: delivery.clientName,
-      telephone: delivery.clientPhone,
-      adresse: delivery.address,
-      statut: delivery.status,
+      orderId: delivery.orderId || delivery._id,
+      clientName: delivery.clientName,
+      clientPhone: delivery.clientPhone,
+      address: delivery.address,
+      status: delivery.status,
       total: delivery.total,
       deliveredAt: delivery.deliveredAt,
+      products: delivery.products || [],
+      priority: delivery.priority || 'normal',
     }));
 
-    // Dashboard global
-    const dashboard = {
+    // Dashboard global (sans todaysDeliveries)
+    return {
       user: {
         name: livreur.user.name,
         phone: livreur.user.phone,
@@ -133,15 +154,14 @@ async function getLivreurDashboard(livreurId) {
       status: livreur.status,
       vehicleType: livreur.vehicleType,
       zone: livreur.zone,
-      todaysDeliveries,
-      deliveryHistory,
+      wallet: livreur.wallet,
+      deliveryHistory, // uniquement l'historique
     };
-
-    return dashboard;
   } catch (error) {
-    throw new Error('Erreur lors de la récupération du dashboard : ' + error.message);
+    throw new Error('Erreur lors de la récupération de l\'historique : ' + error.message);
   }
 }
+
 
 module.exports = {
   getAllLivreurs,

@@ -43,7 +43,6 @@ const distributorSchema = new mongoose.Schema({
       delivery: { type: String, enum: ['oui', 'non'], default: 'non' },
       deliveryFee: { type: Number, default: 0 },  // frais calculés dynamiquement
       distance: { type: Number, default: 0 }      // distance km entre client et distributeur
-
       
     }
   ],

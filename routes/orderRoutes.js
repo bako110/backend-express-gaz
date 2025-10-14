@@ -1,12 +1,20 @@
-// routes/commandeRoutes.js
 const express = require('express');
 const router = express.Router();
-const CommandeController = require('../controllers/orderController');
 const mongoose = require('mongoose');
 const Client = require('../models/client');
+const CommandeController = require('../controllers/orderController');
 
 // ------------------- Route pour créer une commande -------------------
 router.post('/', CommandeController.createCommande);
+
+// ------------------- Route pour confirmer ou mettre à jour le statut d'une commande -------------------
+router.put('/:orderId/status', CommandeController.confirmOrder);
+
+// ------------------- Route pour marquer une commande comme livrée -------------------
+router.put('/:orderId/delivered', CommandeController.markAsDelivered);
+
+// ------------------- Route pour récupérer toutes les commandes en cours de livraison -------------------
+router.get('/en-cours', CommandeController.getOrdersEnLivraison);
 
 // ------------------- Route pour récupérer l'historique des commandes d'un client -------------------
 router.get('/historique/:clientId', async (req, res) => {
@@ -30,9 +38,5 @@ router.get('/historique/:clientId', async (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 });
-
-router.put('/:orderId/status', CommandeController.confirmOrder);
-
-router.get('/en-cours/:clientId', CommandeController.getOrdersEnLivraison)
 
 module.exports = router;

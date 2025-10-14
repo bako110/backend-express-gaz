@@ -12,9 +12,22 @@ const ProductService = {
     return distributor.products[distributor.products.length - 1]; // retourne le dernier produit ajouté
   },
 
+  // 📋 Récupérer les produits d'un distributeur spécifique
+  async getProducts(distributorId) {
+    const distributor = await Distributeur.findById(distributorId).populate('user').lean();
+    if (!distributor) throw new Error("Distributeur introuvable");
+
+    return distributor.products.map(product => ({
+      ...product,
+      distributorId: distributor._id,
+      distributorName: distributor.user?.name || null,
+      zone: distributor.zone || null,
+      lastLocation: distributor.user?.lastLocation || null
+    }));
+  },
+
   // 📋 Récupérer tous les produits de tous les distributeurs avec infos user
   async getAllProducts() {
-    // On récupère tous les distributeurs et on populate le user
     const distributors = await Distributeur.find().populate('user').lean();
 
     const allProducts = [];

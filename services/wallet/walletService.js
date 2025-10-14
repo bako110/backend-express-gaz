@@ -1,57 +1,108 @@
-// services/walletService.js
+const Client = require('../../models/client');
+const Distributor = require('../../models/distributeur');
 const Livreur = require('../../models/livreur');
 
-async function createTransaction(userId, type, amount, method) {
-  const livreur = await Livreur.findOne({ user: userId });
-  if (!livreur) {
-    throw new Error("Livreur introuvable");
+/**
+ * Récupère l'historique des transactions selon le type d'utilisateur
+ */
+exports.getTransactions = async (userId) => {
+  try {
+    // -------------------- LIVREUR --------------------
+    const livreur = await Livreur.findOne({ user: userId });
+    if (livreur) {
+      return { 
+        transactions: livreur.wallet?.transactions || [],
+        balance: livreur.wallet?.balance || 0
+      };
+    }
+
+    // -------------------- DISTRIBUTEUR --------------------
+    const distributor = await Distributor.findOne({ user: userId });
+    if (distributor) {
+      return { 
+        transactions: distributor.transactions || [],
+        balance: distributor.revenue || 0
+      };
+    }
+
+    // -------------------- CLIENT --------------------
+    const client = await Client.findOne({ user: userId });
+    if (client) {
+      return { 
+        transactions: client.walletTransactions || [],
+        balance: client.credit || 0
+      };
+    }
+
+    // ❌ Aucun trouvé
+    throw new Error("Aucun utilisateur trouvé avec cet user ID");
+
+  } catch (error) {
+    console.error("❌ Erreur getTransactions service:", error.message);
+    throw new Error(`Impossible de récupérer les transactions : ${error.message}`);
+  }
+};
+
+/**
+ * Met à jour le portefeuille du client
+ */
+exports.updateWallet = async (clientId, credit, transaction) => {
+  const client = await Client.findById(clientId);
+  if (!client) throw new Error('Client introuvable');
+
+  const { type, amount } = transaction;
+
+  // Vérifications des montants
+  if (type === 'recharge' && amount > 400000) {
+    throw new Error('Montant maximum de recharge : 400 000 FCFA');
+  }
+  if (type === 'retrait' && amount > client.credit) {
+    throw new Error('Solde insuffisant');
   }
 
-  if (type === 'retrait' && amount > livreur.wallet.balance) {
-    throw new Error("Solde insuffisant");
-  }
+  // Mettre à jour le crédit
+  client.credit = credit;
 
-  if (type === 'recharge') {
-    livreur.wallet.balance += amount;
-  } else {
-    livreur.wallet.balance -= amount;
-  }
-
-  const transaction = {
-    amount,
+  // Enregistrer la transaction dans l'historique
+  client.walletTransactions.unshift({
     type,
-    method,
-    description: type === 'recharge' ? 'Recharge du wallet' : 'Retrait du wallet',
-    status: 'completed'
-  };
+    amount,
+    date: transaction.date || new Date(),
+  });
 
-  livreur.wallet.transactions.push(transaction);
-  await livreur.save();
+  await client.save();
 
-  return {
-    balance: livreur.wallet.balance,
-    transaction: livreur.wallet.transactions[livreur.wallet.transactions.length - 1]
-  };
-}
+  return { balance: client.credit, transaction };
+};
 
-async function getTransactions(userId) {
-  const livreur = await Livreur.findOne({ user: userId });
-  if (!livreur) {
-    throw new Error("Livreur introuvable");
+/**
+ * Récupère le solde de l'utilisateur
+ */
+exports.getBalance = async (userId) => {
+  try {
+    // -------------------- LIVREUR --------------------
+    const livreur = await Livreur.findOne({ user: userId });
+    if (livreur) {
+      return { balance: livreur.wallet?.balance || 0 };
+    }
+
+    // -------------------- DISTRIBUTEUR --------------------
+    const distributor = await Distributor.findOne({ user: userId });
+    if (distributor) {
+      return { balance: distributor.revenue || 0 };
+    }
+
+    // -------------------- CLIENT --------------------
+    const client = await Client.findOne({ user: userId });
+    if (client) {
+      return { balance: client.credit || 0 };
+    }
+
+    // ❌ Aucun trouvé
+    throw new Error("Aucun utilisateur trouvé avec cet user ID");
+
+  } catch (error) {
+    console.error("❌ Erreur getBalance service:", error.message);
+    throw new Error(`Impossible de récupérer le solde : ${error.message}`);
   }
-  return livreur.wallet.transactions;
-}
-
-async function getBalance(userId) {
-  const livreur = await Livreur.findOne({ user: userId });
-  if (!livreur) {
-    throw new Error("Livreur introuvable");
-  }
-  return livreur.wallet.balance;
-}
-
-module.exports = {
-  createTransaction,
-  getTransactions,
-  getBalance
 };

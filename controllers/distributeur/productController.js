@@ -1,4 +1,5 @@
-const productService = require('../../services/distributeur/productService');
+const productService = require('../../services/distributeur/productService'); 
+
 
 // ➕ Ajouter un produit
 const addProduct = async (req, res) => {

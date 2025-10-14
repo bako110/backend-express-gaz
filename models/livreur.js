@@ -13,15 +13,14 @@ const livreurSchema = new mongoose.Schema({
     default: 'disponible'
   },
 
-  // 🚀 Wallet ajouté
   wallet: {
-    balance: { type: Number, default: 0 }, // solde actuel
-    currency: { type: String, default: 'XOF' }, // devise (ex: FCFA)
+    balance: { type: Number, default: 0 },
+    currency: { type: String, default: 'XOF' },
     transactions: [
       {
-        amount: { type: Number, required: true }, // montant crédit/débit
-        type: { type: String, enum: ['credit', 'debit'], required: true }, // entrée ou sortie
-        description: { type: String }, // ex: "Paiement livraison #123"
+        amount: { type: Number, required: true },
+        type: { type: String, enum: ['credit', 'debit'], required: true },
+        description: { type: String },
         date: { type: Date, default: Date.now }
       }
     ]
@@ -33,8 +32,10 @@ const livreurSchema = new mongoose.Schema({
       clientName: { type: String, required: true },
       clientPhone: { type: String, required: true },
       address: { type: String, required: true },
-      status: { type: String, enum: ['en_cours',  'en_attente', 'termine', 'annule'], default: 'en_cours' },
+      status: { type: String, enum: ['en_cours', 'en_attente', 'termine', 'annule', 'livre'], default: 'en_cours' }, // ✅ 'livre' ajouté
       distance: { type: String },
+      delivery: { type: String, enum: ['oui', 'non'], default: 'non' },
+      priority: { type: String, enum: ['normal', 'high', 'urgent'], default: 'normal' },
       estimatedTime: { type: String },
       total: { type: Number, required: true },
       scheduledAt: { type: Date, required: true },
@@ -47,9 +48,14 @@ const livreurSchema = new mongoose.Schema({
       clientName: { type: String },
       clientPhone: { type: String },
       address: { type: String },
-      status: { type: String, enum: ['livre', 'annule'] },
-      total: { type: Number },
+      status: { type: String, enum: ['en_cours', 'en_attente', 'termine', 'annule', 'livre'], default: 'en_cours' }, // ✅ 'livre' ajouté
+      total: { type: Number, required: true },
       deliveredAt: { type: Date, default: Date.now },
+      delivery: { type: String, enum: ['oui', 'non'], default: 'non' },
+      distance: { type: String },
+      priority: { type: String, enum: ['normal', 'high', 'urgent'], default: 'normal' },
+      estimatedTime: { type: String },
+      scheduledAt: { type: Date, required: true },
     }
   ],
 
