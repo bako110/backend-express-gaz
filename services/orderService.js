@@ -9,116 +9,129 @@ const { assignDelivery } = require('../services/distributeur/distributorService'
  */
 class CommandeService {
 
-  /**
-   * Crée une nouvelle commande pour un client et un distributeur.
-   * @param {Object} commandeData - Données de la commande.
-   * @returns {Object} - Résultat de la création de la commande.
-   */
-  static async createCommande(commandeData) {
-    const {
-      clientId,
-      distributorId,
-      product,
-      address,
-      clientName,
-      clientPhone,
-      priority,
-      clientLocation,   // { lat, lng }
-      distance,         // venant du frontend
-      deliveryFee       // venant du frontend
-    } = commandeData;
+/**
+ * Crée une nouvelle commande pour un client et un distributeur.
+ * Recherche automatiquement le client à partir du userId envoyé par le frontend.
+ * @param {Object} commandeData - Données de la commande.
+ * @returns {Object} - Résultat de la création de la commande.
+ */
+static async createCommande(commandeData) {
+  const {
+    userId,
+    distributorId,
+    product,
+    address,
+    clientName,
+    clientPhone,
+    priority,
+    clientLocation,
+    distance,
+    deliveryFee
+  } = commandeData;
 
-    if (!clientId || !mongoose.Types.ObjectId.isValid(clientId)) 
-      throw new Error("Client ID invalide.");
-    if (!distributorId || !mongoose.Types.ObjectId.isValid(distributorId)) 
-      throw new Error("Distributor ID invalide.");
+  console.log("🟢 Données reçues pour création de commande :", commandeData);
 
-    const client = await Client.findById(clientId);
-    if (!client) throw new Error("Client non trouvé.");
+  if (!userId) throw new Error("User ID manquant.");
+  if (!distributorId || !mongoose.Types.ObjectId.isValid(distributorId))
+    throw new Error("Distributor ID invalide.");
 
-    const distributor = await Distributor.findById(distributorId);
-    if (!distributor) throw new Error("Distributeur non trouvé.");
+  // 🔍 Recherche du client via le champ 'user' qui référence l'User ID
+  const client = await Client.findOne({ user: userId });
+  if (!client) throw new Error("Client introuvable pour cet utilisateur.");
 
-    const distributorProduct = distributor.products.find(
-      (p) => p.name === product.name && p.type === product.type
-    );
-    if (!distributorProduct || distributorProduct.stock < product.quantity) {
-      throw new Error("Produit indisponible ou stock insuffisant.");
-    }
+  console.log("🧾 Client trouvé :", client._id.toString(), client.name);
 
-    const productPrice = product.price * product.quantity;
-    const totalOrder = productPrice + (deliveryFee || 0); // utiliser deliveryFee du frontend
-    const orderId = new mongoose.Types.ObjectId();
-    const now = new Date();
+  const distributor = await Distributor.findById(distributorId);
+  if (!distributor) throw new Error("Distributeur non trouvé.");
 
-    // Conversion booléen en enum
-    const deliveryEnum = (deliveryFee && deliveryFee >= 0) ? "oui" : "non";
+  console.log("🧾 Distributeur trouvé :", distributor._id.toString(), distributor.name || distributor.user?.name);
 
-    const clientOrder = {
-      _id: orderId,
-      products: [product],
-      productPrice,
-      deliveryFee: deliveryFee || 0,
-      total: totalOrder,
-      address,
-      clientName,
-      clientPhone,
-      distributorId: distributor._id,
-      distributorName: distributor.user?.name || distributor.name || "Nom non défini",
-      status: 'nouveau',
-      priority,
-      orderTime: now,
-      delivery: deliveryEnum,
-      livreurId: null,
-      clientLocation,
-      distance
-    };
+  const distributorProduct = distributor.products.find(
+    (p) => p.name === product.name && p.type === product.type
+  );
 
-    const distributorOrder = {
-      _id: orderId,
-      clientId: client._id,
-      clientName,
-      clientPhone,
-      address,
-      products: [product],
-      productPrice,
-      deliveryFee: deliveryFee || 0,
-      total: totalOrder,
-      status: 'nouveau',
-      priority,
-      orderTime: now,
-      distributorName: distributor.user?.name || distributor.name || "Nom non défini",
-      livreurId: null,
-      delivery: deliveryEnum,
-      clientLocation,
-      distance
-    };
-
-    // Mise à jour client et distributeur
-    client.orders.push(clientOrder);
-    client.credit -= totalOrder;
-    client.walletTransactions.push({
-      type: 'retrait',
-      amount: totalOrder,
-      date: now,
-      description: `Commande ${orderId} payée (Produit: ${productPrice} + Livraison: ${deliveryFee || 0})`
-    });
-
-    distributor.orders.push(distributorOrder);
-    distributorProduct.stock -= product.quantity;
-
-    await client.save();
-    await distributor.save();
-
-    return {
-      success: true,
-      message: "Commande créée avec succès ! Aucun paiement n'est encore effectué.",
-      clientOrder,
-      distributorOrder,
-      deliveryFee: deliveryFee || 0,
-      distance
-    };
+  if (!distributorProduct || distributorProduct.stock < product.quantity) {
+    throw new Error("Produit indisponible ou stock insuffisant.");
   }
+
+  console.log("🧾 Produit trouvé chez le distributeur :", distributorProduct.name, "Stock:", distributorProduct.stock);
+
+  const productPrice = product.price * product.quantity;
+  const totalOrder = productPrice + (deliveryFee || 0);
+  const orderId = new mongoose.Types.ObjectId();
+  const now = new Date();
+  const deliveryEnum = (deliveryFee && deliveryFee >= 0) ? "oui" : "non";
+
+  const clientOrder = {
+    _id: orderId,
+    products: [product],
+    productPrice,
+    deliveryFee: deliveryFee || 0,
+    total: totalOrder,
+    address,
+    clientName,
+    clientPhone,
+    distributorId: distributor._id,
+    distributorName: distributor.user?.name || distributor.name || "Nom non défini",
+    status: 'nouveau',
+    priority,
+    orderTime: now,
+    delivery: deliveryEnum,
+    livreurId: null,
+    clientLocation,
+    distance
+  };
+
+  const distributorOrder = {
+    _id: orderId,
+    clientId: client._id,
+    clientName,
+    clientPhone,
+    address,
+    products: [product],
+    productPrice,
+    deliveryFee: deliveryFee || 0,
+    total: totalOrder,
+    status: 'nouveau',
+    priority,
+    orderTime: now,
+    distributorName: distributor.user?.name || distributor.name || "Nom non défini",
+    livreurId: null,
+    delivery: deliveryEnum,
+    clientLocation,
+    distance
+  };
+
+  console.log("🧾 Création d'ordre avec ID :", orderId.toString());
+
+  // Mise à jour du client
+  client.orders.push(clientOrder);
+  client.credit = (client.credit || 0) - totalOrder;
+  client.walletTransactions.push({
+    type: 'retrait',
+    amount: totalOrder,
+    date: now,
+    description: `Commande ${orderId} payée (Produit: ${productPrice} + Livraison: ${deliveryFee || 0})`
+  });
+
+  // Mise à jour du distributeur
+  distributor.orders.push(distributorOrder);
+  distributorProduct.stock -= product.quantity;
+
+  await client.save();
+  await distributor.save();
+
+  console.log("✅ Commande sauvegardée avec succès pour client et distributeur");
+
+  return {
+    success: true,
+    message: "Commande créée avec succès ! Aucun paiement n'est encore effectué.",
+    clientOrder,
+    distributorOrder,
+    deliveryFee: deliveryFee || 0,
+    distance
+  };
+}
 
   /**
    * Assignation du livreur via un service séparé.
@@ -157,7 +170,9 @@ class CommandeService {
  * Lorsqu’un livreur confirme la livraison :
  * - Le statut passe à "livré"
  * - Le champ `delivery` devient "oui"
- * - Le livreur est crédité et devient disponible s’il n’a plus de livraisons
+ * - Le livreur est crédité (frais de livraison)
+ * - Le distributeur est crédité (montant de la commande)
+ * - Une transaction est enregistrée pour la traçabilité
  */
 static async markAsDelivered(orderId, livreurId) {
   try {
@@ -178,7 +193,6 @@ static async markAsDelivered(orderId, livreurId) {
     const livreur = await Livreur.findById(livreurId);
     if (!livreur) throw new Error("Livreur non trouvé");
 
-    // Chercher la livraison dans deliveryHistory
     const deliveryInHistory = livreur.deliveryHistory.find(
       d => d.orderId.toString() === orderId.toString()
     );
@@ -188,7 +202,6 @@ static async markAsDelivered(orderId, livreurId) {
       deliveryInHistory.delivery = 'oui';
       deliveryInHistory.deliveredAt = now;
     } else {
-      // Si non existante, ajouter dans l'historique
       livreur.deliveryHistory.push({
         orderId,
         clientName: clientOrder.clientName || '',
@@ -202,11 +215,11 @@ static async markAsDelivered(orderId, livreurId) {
       });
     }
 
-    // -------------------- 3️⃣ WALLET DU LIVREUR --------------------
+    // -------------------- WALLET DU LIVREUR --------------------
     const livreurAmount = clientOrder.deliveryFee || 0; // frais de livraison
     if (!livreur.wallet) livreur.wallet = { balance: 0, transactions: [] };
 
-    livreur.wallet.balance = (livreur.wallet.balance || 0) + livreurAmount;
+    livreur.wallet.balance += livreurAmount;
     livreur.wallet.transactions.push({
       amount: livreurAmount,
       type: 'credit',
@@ -214,20 +227,15 @@ static async markAsDelivered(orderId, livreurId) {
       date: now,
     });
 
-    // Mise à jour stats livreur
     livreur.totalLivraisons = (livreur.totalLivraisons || 0) + 1;
     livreur.totalRevenue = (livreur.totalRevenue || 0) + livreurAmount;
 
-    // Supprimer la livraison du jour
+    // Supprimer la livraison du jour si terminée
     if (Array.isArray(livreur.todaysDeliveries)) {
-      const deliveryIndex = livreur.todaysDeliveries.findIndex(
-        d => d.orderId.toString() === orderId.toString()
+      livreur.todaysDeliveries = livreur.todaysDeliveries.filter(
+        d => d.orderId.toString() !== orderId.toString()
       );
-      if (deliveryIndex !== -1) {
-        livreur.todaysDeliveries.splice(deliveryIndex, 1);
-      }
 
-      // Livreur disponible si plus de livraisons
       if (livreur.todaysDeliveries.length === 0) {
         livreur.status = 'disponible';
       }
@@ -235,38 +243,56 @@ static async markAsDelivered(orderId, livreurId) {
 
     await livreur.save();
 
-    // -------------------- 4️⃣ DISTRIBUTEUR --------------------
+    // -------------------- 3️⃣ DISTRIBUTEUR --------------------
     let distributorPayment = 0;
     const distributor = await Distributor.findOne({ 'orders._id': orderId });
+    if (!distributor) throw new Error("Distributeur non trouvé pour cette commande");
 
-    if (distributor) {
-      const distributorOrder = distributor.orders?.id(orderId);
+    const distributorOrder = distributor.orders.id(orderId);
+    if (!distributorOrder) throw new Error("Commande non trouvée dans les commandes du distributeur");
 
-      if (distributorOrder) {
-        distributorOrder.status = 'livre';
-        distributorOrder.delivery = 'oui';
-        distributorPayment = (distributorOrder.total || 0) - (distributorOrder.deliveryFee || 0);
-        distributor.revenue = (distributor.revenue || 0) + distributorPayment;
-      }
+    distributorOrder.status = 'livre';
+    distributorOrder.delivery = 'oui';
 
-      const distDelivery = distributor.deliveries?.find(
-        d => d.orderId.toString() === orderId.toString()
-      );
-      if (distDelivery) {
-        distDelivery.status = 'livre';
-        distDelivery.delivery = 'oui';
-        distDelivery.endTime = now;
-      }
+    distributorPayment = (distributorOrder.total || 0) - (distributorOrder.deliveryFee || 0);
 
-      await distributor.save();
+    // Créditer le distributeur
+    distributor.revenue = (distributor.revenue || 0) + distributorPayment;
+    distributor.balance = (distributor.balance || 0) + distributorPayment;
+
+    // Mettre à jour la livraison côté distributeur
+    const distDelivery = distributor.deliveries?.find(
+      d => d.orderId.toString() === orderId.toString()
+    );
+    if (distDelivery) {
+      distDelivery.status = 'livre';
+      distDelivery.delivery = 'oui';
+      distDelivery.endTime = now;
     }
 
+    // -------------------- 💰 AJOUTER TRANSACTION --------------------
+    const transactionId = `TX-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    distributor.transactions.push({
+      transactionId,
+      type: 'vente',
+      amount: distributorPayment,
+      date: now,
+      description: `Paiement reçu pour la commande ${orderId}`,
+      relatedOrder: orderId,
+      method: 'cash',
+      status: 'terminee'
+    });
+
+    await distributor.save();
+
+    // -------------------- ✅ RÉSULTAT --------------------
     return {
       success: true,
-      message: "✅ Commande livrée avec succès — Client, Distributeur et Livreur mis à jour (paiements corrects).",
+      message: "✅ Commande livrée avec succès — Client, Distributeur et Livreur mis à jour (paiements enregistrés).",
       clientOrder,
       livreurPayment: livreurAmount,
       distributorPayment,
+      transactionId,
     };
 
   } catch (error) {
@@ -274,6 +300,7 @@ static async markAsDelivered(orderId, livreurId) {
     throw new Error(`Erreur lors de la mise à jour de la livraison : ${error.message}`);
   }
 }
+
 
 
   /**

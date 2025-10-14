@@ -18,7 +18,7 @@ const distributorSchema = new mongoose.Schema({
       minStock: { type: Number, default: 10 },
       price: { type: Number, required: true },
       sales: { type: Number, default: 0 },
-      image: { type: String },                       // URL ou chemin
+      image: { type: String },                      // URL ou chemin de l'image
     }
   ],
 
@@ -41,37 +41,54 @@ const distributorSchema = new mongoose.Schema({
       priority: { type: String, enum: ['normal', 'high', 'urgent'], default: 'normal' },
       status: { type: String, enum: ['nouveau', 'confirme', 'en_livraison', 'livre', 'annule'], default: 'nouveau' },
       delivery: { type: String, enum: ['oui', 'non'], default: 'non' },
-      deliveryFee: { type: Number, default: 0 },  // frais calculés dynamiquement
-      distance: { type: Number, default: 0 }      // distance km entre client et distributeur
-      
+      deliveryFee: { type: Number, default: 0 },
+      distance: { type: Number, default: 0 }
     }
   ],
 
   // ------------------- Deliveries -------------------
   deliveries: [
-  {
-    orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
-    clientName: { type: String, required: true },
-    driverId: { type: mongoose.Schema.Types.ObjectId, ref: 'Livreur', required: false}, // Référence au livreur
-    driverName: { type: String, required: true }, // Nom du livreur (optionnel, pour affichage)
-    driverPhone: { type: String, required: true }, // Téléphone du livreur (optionnel, pour affichage)
-    status: { type: String, enum: ['en_route', 'livre'], default: 'en_route' },
-    startTime: { type: Date },
-    estimatedArrival: { type: Date },
-    progress: { type: Number, default: 0 }, // Pourcentage 0-100
-    total: { type: Number, required: true },
-  }
-]
+    {
+      orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
+      clientName: { type: String, required: true },
+      driverId: { type: mongoose.Schema.Types.ObjectId, ref: 'Livreur', required: false },
+      driverName: { type: String, required: true },
+      driverPhone: { type: String, required: true },
+      status: { type: String, enum: ['en_route', 'livre'], default: 'en_route' },
+      startTime: { type: Date },
+      estimatedArrival: { type: Date },
+      progress: { type: Number, default: 0 },
+      total: { type: Number, required: true },
+    }
+  ],
+
+  // ------------------- Transactions -------------------
+  transactions: [
+    {
+      transactionId: { type: String, unique: true, required: true }, // identifiant unique
+      type: {
+        type: String,
+        enum: ['vente', 'retrait', 'approvisionnement', 'commission', 'autre'],
+        required: true
+      },
+      amount: { type: Number, required: true },
+      date: { type: Date, default: Date.now },
+      description: { type: String },
+      relatedOrder: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+      method: { type: String, enum: ['cash', 'mobile_money', 'banque', 'autre'], default: 'cash' },
+      status: { type: String, enum: ['en_attente', 'terminee', 'echouee'], default: 'terminee' }
+    }
+  ],
 
 }, { timestamps: true });
 
-// ------------------- AJOUTER L'INDEX ICI -------------------
-  distributorSchema.index({
-    'products.name': 'text',
-    'products.type': 'text',
-    zone: 'text',
-    'user.name': 'text', // si tu stockes username dans User
-  });
+// ------------------- INDEX -------------------
+distributorSchema.index({
+  'products.name': 'text',
+  'products.type': 'text',
+  zone: 'text',
+  'user.name': 'text',
+});
 
 // ------------------- Export -------------------
 module.exports = mongoose.model('Distributor', distributorSchema);
