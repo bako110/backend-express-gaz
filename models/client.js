@@ -52,7 +52,10 @@ const clientSchema = new mongoose.Schema({
       delivery: { type: String, enum: ['oui', 'non'], default: 'non' },
       distance: { type: Number, default: 0 },           // distance km entre client et distributeur
       livreurId: { type: mongoose.Schema.Types.ObjectId, ref: 'Livreur', default: null },
-      scheduledAt: { type: Date }                       // Date prévue pour la livraison
+      scheduledAt: { type: Date },                       // Date prévue pour la livraison
+
+      // ------------------- QR code -------------------
+      qrCode: { type: String }                          // QR code en base64 pour la commande
     }
   ],
 
@@ -77,6 +80,7 @@ const clientSchema = new mongoose.Schema({
       distributorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Distributor' },
       distributorName: { type: String },
       livreurId: { type: mongoose.Schema.Types.ObjectId, ref: 'Livreur' }, // pour historique
+      qrCode: { type: String } // QR code conservé dans l'historique
     }
   ]
 
