@@ -16,5 +16,7 @@ router.post('/login', AuthController.login);
 // Connexion avec téléphone + PIN
 router.post('/login-phone', AuthController.loginWithPhone);
 
+router.post('/:id/kyc', AuthController.submitKYC);
+
 
 module.exports = router;

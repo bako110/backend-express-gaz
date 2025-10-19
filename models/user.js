@@ -31,7 +31,36 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
-    // ✅ Géolocalisation complète avec toutes les données
+    // ✅ Module KYC (vérification d'identité)
+    kyc: {
+      idDocument: {
+        type: String, // URL ou chemin vers le document d'identité (CNI, passeport, etc.)
+        default: null,
+      },
+      livePhoto: {
+        type: String, // URL ou chemin vers la photo prise en direct
+        default: null,
+      },
+      status: {
+        type: String,
+        enum: ['non_verifie', 'en_cours', 'verifie', 'rejete'],
+        default: 'non_verifie', // ✅ Par défaut : non vérifié
+      },
+      submittedAt: {
+        type: Date,
+        default: null, // Date d’envoi du KYC
+      },
+      verifiedAt: {
+        type: Date,
+        default: null, // Date de validation du KYC
+      },
+      comments: {
+        type: String,
+        default: null, // Optionnel : message d’un admin en cas de rejet
+      },
+    },
+
+    // ✅ Géolocalisation complète
     lastLocation: {
       latitude: { 
         type: Number,
@@ -45,13 +74,12 @@ const userSchema = new mongoose.Schema(
       },
       neighborhood: { 
         type: String, 
-        default: 'Quartier non identifié' // 🔥 Valeur par défaut au lieu de null
+        default: 'Quartier non identifié'
       },
       timestamp: { 
         type: Date, 
-        default: Date.now // 🔥 Timestamp de la dernière mise à jour
+        default: Date.now
       },
-      // 🆕 Optionnel : données GPS supplémentaires (si tu veux les stocker)
       accuracy: { 
         type: Number, 
         default: null 
@@ -86,7 +114,7 @@ userSchema.methods.matchPin = async function (enteredPin) {
   return await bcrypt.compare(enteredPin, this.pin);
 };
 
-// 🆕 Méthode helper pour mettre à jour la localisation (optionnel)
+// 🆕 Méthode helper pour mettre à jour la localisation
 userSchema.methods.updateLocation = function (locationData) {
   this.lastLocation = {
     latitude: locationData.latitude,

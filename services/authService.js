@@ -112,7 +112,6 @@ class UserService {
     const isMatch = await user.matchPin(pin);
     if (!isMatch) return { success: false, message: 'Code PIN incorrect.' };
 
-    // 🔹 Reverse-geocoding si latitude/longitude fournis
     let city = null;
     let country = null;
     if (latitude && longitude) {
@@ -130,36 +129,17 @@ class UserService {
         console.error('Erreur reverse geocoding:', err.message);
       }
 
-      // 🔹 Mettre à jour la localisation de l’utilisateur
-      user.lastLocation = {
-        latitude,
-        longitude,
-        city,
-        country,
-        updatedAt: new Date(),
-      };
+      user.lastLocation = { latitude, longitude, city, country, updatedAt: new Date() };
       await user.save();
     }
 
-    const token = jwt.sign(
-      { id: user._id, userType: user.userType },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
-
+    const token = jwt.sign({ id: user._id, userType: user.userType }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     const profileData = await this.getProfile(user);
 
     return {
       success: true,
       token,
-      user: {
-        id: user._id.toString(),
-        name: user.name,
-        phone: user.phone,
-        userType: user.userType,
-        photo: user.photo,
-        lastLocation: user.lastLocation || null, // 🔹 On renvoie la localisation
-      },
+      user: { id: user._id.toString(), name: user.name, phone: user.phone, userType: user.userType, photo: user.photo, lastLocation: user.lastLocation || null },
       profile: profileData,
     };
   }
@@ -173,7 +153,6 @@ class UserService {
     const isMatch = await user.matchPin(pin);
     if (!isMatch) return { success: false, message: 'Code PIN incorrect.' };
 
-    // 🔹 Reverse-geocoding si latitude/longitude fournis
     let city = null;
     let country = null;
     if (latitude && longitude) {
@@ -191,35 +170,17 @@ class UserService {
         console.error('Erreur reverse geocoding:', err.message);
       }
 
-      user.lastLocation = {
-        latitude,
-        longitude,
-        city,
-        country,
-        updatedAt: new Date(),
-      };
+      user.lastLocation = { latitude, longitude, city, country, updatedAt: new Date() };
       await user.save();
     }
 
-    const token = jwt.sign(
-      { id: user._id, userType: user.userType },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
-
+    const token = jwt.sign({ id: user._id, userType: user.userType }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     const profileData = await this.getProfile(user);
 
     return {
       success: true,
       token,
-      user: {
-        id: user._id.toString(),
-        name: user.name,
-        phone: user.phone,
-        userType: user.userType,
-        photo: user.photo,
-        lastLocation: user.lastLocation || null,
-      },
+      user: { id: user._id.toString(), name: user.name, phone: user.phone, userType: user.userType, photo: user.photo, lastLocation: user.lastLocation || null },
       profile: profileData,
     };
   }
@@ -239,6 +200,30 @@ class UserService {
       return profile ? profile.toObject() : null;
     }
     return null;
+  }
+
+  // ------------------- UPDATE KYC -------------------
+  static async updateKYC(userId, idDocument, livePhoto) {
+    try {
+      const user = await User.findById(userId);
+      if (!user) throw new Error("Utilisateur introuvable");
+
+      user.kyc = {
+        idDocument,
+        livePhoto,
+        verified: false, // statut initial avant vérification
+        submittedAt: new Date(),
+      };
+
+      await user.save();
+
+      return {
+        message: "KYC soumis avec succès. En attente de vérification.",
+        kyc: user.kyc,
+      };
+    } catch (error) {
+      throw new Error(error.message || "Erreur lors de la mise à jour du KYC");
+    }
   }
 }
 

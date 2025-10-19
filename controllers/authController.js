@@ -1,7 +1,7 @@
 const UserService = require('../services/authService');
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'secret123'; // ⚠️ change en prod
+const JWT_SECRET = process.env.JWT_SECRET || 'secret123'; // ⚠️ changer en prod
 const JWT_EXPIRES_IN = '7d'; // Durée de validité du token
 
 class AuthController {
@@ -42,7 +42,6 @@ class AuthController {
   // ====================
   static async login(req, res) {
     try {
-      // 🔹 le front envoie latitude / longitude, pas "location" direct
       const { userId, pin, latitude, longitude } = req.body;
 
       if (!userId || !pin) {
@@ -51,14 +50,8 @@ class AuthController {
           .json({ message: 'Le userId et le PIN sont requis' });
       }
 
-      // 🔹 On passe latitude/longitude au service
       const { user, profile, token: existingToken } =
-        await UserService.loginWithPin({
-          userId,
-          pin,
-          latitude,
-          longitude,
-        });
+        await UserService.loginWithPin({ userId, pin, latitude, longitude });
 
       if (!user) {
         return res
@@ -66,18 +59,15 @@ class AuthController {
           .json({ message: 'PIN incorrect ou utilisateur introuvable' });
       }
 
-      // Génération du token si non fourni par le service
       const token =
         existingToken ||
-        jwt.sign(
-          { id: user.id, userType: user.userType },
-          JWT_SECRET,
-          { expiresIn: JWT_EXPIRES_IN }
-        );
+        jwt.sign({ id: user.id, userType: user.userType }, JWT_SECRET, {
+          expiresIn: JWT_EXPIRES_IN,
+        });
 
       res.status(200).json({
         message: 'Connexion réussie',
-        user, // 🔹 inclut déjà lastLocation depuis UserService
+        user,
         profile,
         token,
       });
@@ -101,14 +91,8 @@ class AuthController {
           .json({ message: 'Le téléphone et le PIN sont requis' });
       }
 
-      // 🔹 On passe latitude/longitude au service
       const { user, profile, token: existingToken } =
-        await UserService.loginWithPhone({
-          phone,
-          pin,
-          latitude,
-          longitude,
-        });
+        await UserService.loginWithPhone({ phone, pin, latitude, longitude });
 
       if (!user) {
         return res
@@ -118,15 +102,13 @@ class AuthController {
 
       const token =
         existingToken ||
-        jwt.sign(
-          { id: user.id, userType: user.userType },
-          JWT_SECRET,
-          { expiresIn: JWT_EXPIRES_IN }
-        );
+        jwt.sign({ id: user.id, userType: user.userType }, JWT_SECRET, {
+          expiresIn: JWT_EXPIRES_IN,
+        });
 
       res.status(200).json({
         message: 'Connexion réussie',
-        user, // 🔹 inclut déjà lastLocation depuis UserService
+        user,
         profile,
         token,
       });
@@ -134,6 +116,25 @@ class AuthController {
       res
         .status(400)
         .json({ message: error.message || 'Erreur lors de la connexion' });
+    }
+  }
+
+  // ====================
+  // SOUMISSION KYC
+  // ====================
+  static async submitKYC(req, res) {
+    try {
+      const { idDocument, livePhoto } = req.body;
+
+      if (!idDocument || !livePhoto) {
+        return res.status(400).json({ success: false, message: 'Tous les fichiers KYC sont requis' });
+      }
+
+      const result = await UserService.updateKYC(req.params.id, idDocument, livePhoto);
+
+      res.status(200).json({ success: true, ...result });
+    } catch (err) {
+      res.status(400).json({ success: false, message: err.message });
     }
   }
 }
