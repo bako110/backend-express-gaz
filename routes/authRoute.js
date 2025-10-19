@@ -1,11 +1,9 @@
 const express = require('express');
 const AuthController = require('../controllers/authController');
+const multer = require('multer');
 
 const router = express.Router();
-
-// ====================
-// AUTH ROUTES
-// ====================
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Inscription
 router.post('/register', AuthController.register);
@@ -16,7 +14,14 @@ router.post('/login', AuthController.login);
 // Connexion avec téléphone + PIN
 router.post('/login-phone', AuthController.loginWithPhone);
 
-router.post('/:id/kyc', AuthController.submitKYC);
-
+// KYC avec upload des fichiers
+router.post(
+  '/:id/kyc',
+  upload.fields([
+    { name: 'idDocument', maxCount: 1 },
+    { name: 'livePhoto', maxCount: 1 }
+  ]),
+  AuthController.submitKYC
+);
 
 module.exports = router;

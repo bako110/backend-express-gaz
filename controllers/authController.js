@@ -23,8 +23,6 @@ class AuthController {
         userType,
       });
 
-      console.log('Utilisateur créé :', { user, profile });
-
       res.status(201).json({
         message: 'Inscription réussie',
         user,
@@ -124,17 +122,14 @@ class AuthController {
   // ====================
   static async submitKYC(req, res) {
     try {
-      const { idDocument, livePhoto } = req.body;
+      const userId = req.params.id;
+      const idDocumentFile = req.files['idDocument']?.[0];
+      const livePhotoFile = req.files['livePhoto']?.[0];
 
-      if (!idDocument || !livePhoto) {
-        return res.status(400).json({ success: false, message: 'Tous les fichiers KYC sont requis' });
-      }
-
-      const result = await UserService.updateKYC(req.params.id, idDocument, livePhoto);
-
-      res.status(200).json({ success: true, ...result });
-    } catch (err) {
-      res.status(400).json({ success: false, message: err.message });
+      const result = await UserService.updateKYC(userId, idDocumentFile, livePhotoFile);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
     }
   }
 }

@@ -5,6 +5,7 @@ const Livreur = require('../models/livreur');
 const crypto = require('crypto');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
+  const uploadToCloudinary = require('../utils/uploadToCloudinary');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret123';
 const JWT_EXPIRES_IN = '7d';
@@ -203,28 +204,44 @@ class UserService {
   }
 
   // ------------------- UPDATE KYC -------------------
-  static async updateKYC(userId, idDocument, livePhoto) {
-    try {
-      const user = await User.findById(userId);
-      if (!user) throw new Error("Utilisateur introuvable");
 
-      user.kyc = {
-        idDocument,
-        livePhoto,
-        verified: false, // statut initial avant vérification
-        submittedAt: new Date(),
-      };
 
-      await user.save();
+static async updateKYC(userId, idDocumentFile, livePhotoFile) {
+  try {
+    const user = await User.findById(userId);
+    if (!user) throw new Error("Utilisateur introuvable");
 
-      return {
-        message: "KYC soumis avec succès. En attente de vérification.",
-        kyc: user.kyc,
-      };
-    } catch (error) {
-      throw new Error(error.message || "Erreur lors de la mise à jour du KYC");
+    let idDocumentUrl = null;
+    let livePhotoUrl = null;
+
+    if (idDocumentFile) {
+      const result = await uploadToCloudinary(idDocumentFile.buffer, 'kyc/idDocuments');
+      idDocumentUrl = result.secure_url;
     }
+
+    if (livePhotoFile) {
+      const result = await uploadToCloudinary(livePhotoFile.buffer, 'kyc/livePhotos');
+      livePhotoUrl = result.secure_url;
+    }
+
+    user.kyc = {
+      idDocument: idDocumentUrl,
+      livePhoto: livePhotoUrl,
+      verified: false,
+      submittedAt: new Date(),
+    };
+
+    await user.save();
+
+    return {
+      message: "KYC soumis avec succès. En attente de vérification.",
+      kyc: user.kyc,
+    };
+  } catch (error) {
+    throw new Error(error.message || "Erreur lors de la mise à jour du KYC");
   }
+}
+
 }
 
 module.exports = UserService;
