@@ -6,7 +6,8 @@ const userSchema = new mongoose.Schema(
     name: {
       type: String,
       required: [true, 'Le nom est requis'],
-      minlength: 2,
+      minlength: [2, 'Le nom doit contenir au moins 2 caractères'],
+      trim: true,
     },
     phone: {
       type: String,
@@ -17,8 +18,8 @@ const userSchema = new mongoose.Schema(
     pin: {
       type: String,
       required: [true, 'Le code PIN est requis'],
-      minlength: 4,
-      maxlength: 4,
+      minlength: [4, 'Le PIN doit contenir 4 chiffres'],
+      maxlength: [4, 'Le PIN doit contenir 4 chiffres'],
       select: false, // Ne pas renvoyer le PIN par défaut
     },
     userType: {
@@ -27,75 +28,32 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
     photo: {
-      type: String, // URL de l'avatar généré automatiquement
+      type: String, // URL de l'avatar
       default: null,
     },
-
-    // ✅ Module KYC (vérification d'identité)
+    // ✅ Module KYC
     kyc: {
-      idDocument: {
-        type: String, // URL ou chemin vers le document d'identité (CNI, passeport, etc.)
-        default: null,
-      },
-      livePhoto: {
-        type: String, // URL ou chemin vers la photo prise en direct
-        default: null,
-      },
+      idDocument: { type: String, default: null },
+      livePhoto: { type: String, default: null },
       status: {
         type: String,
         enum: ['non_verifie', 'en_cours', 'verifie', 'rejete'],
-        default: 'non_verifie', // ✅ Par défaut : non vérifié
+        default: 'non_verifie',
       },
-      submittedAt: {
-        type: Date,
-        default: null, // Date d’envoi du KYC
-      },
-      verifiedAt: {
-        type: Date,
-        default: null, // Date de validation du KYC
-      },
-      comments: {
-        type: String,
-        default: null, // Optionnel : message d’un admin en cas de rejet
-      },
+      submittedAt: { type: Date, default: null },
+      verifiedAt: { type: Date, default: null },
+      comments: { type: String, default: null },
     },
-
     // ✅ Géolocalisation complète
     lastLocation: {
-      latitude: { 
-        type: Number,
-        min: -90,
-        max: 90,
-      },
-      longitude: { 
-        type: Number,
-        min: -180,
-        max: 180,
-      },
-      neighborhood: { 
-        type: String, 
-        default: 'Quartier non identifié'
-      },
-      timestamp: { 
-        type: Date, 
-        default: Date.now
-      },
-      accuracy: { 
-        type: Number, 
-        default: null 
-      },
-      altitude: { 
-        type: Number, 
-        default: null 
-      },
-      heading: { 
-        type: Number, 
-        default: null 
-      },
-      speed: { 
-        type: Number, 
-        default: null 
-      },
+      latitude: { type: Number, min: -90, max: 90, default: null },
+      longitude: { type: Number, min: -180, max: 180, default: null },
+      neighborhood: { type: String, default: 'Quartier non identifié' },
+      timestamp: { type: Date, default: null },
+      accuracy: { type: Number, default: null },
+      altitude: { type: Number, default: null },
+      heading: { type: Number, default: null },
+      speed: { type: Number, default: null },
     },
   },
   { timestamps: true }
@@ -114,7 +72,7 @@ userSchema.methods.matchPin = async function (enteredPin) {
   return await bcrypt.compare(enteredPin, this.pin);
 };
 
-// 🆕 Méthode helper pour mettre à jour la localisation
+// 🆕 Mise à jour de la localisation
 userSchema.methods.updateLocation = function (locationData) {
   this.lastLocation = {
     latitude: locationData.latitude,
