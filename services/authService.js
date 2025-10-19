@@ -227,9 +227,12 @@ static async updateKYC(userId, idDocumentFile, livePhotoFile) {
     user.kyc = {
       idDocument: idDocumentUrl,
       livePhoto: livePhotoUrl,
-      verified: false,
+      status: 'en_cours', // plutôt que verified: false
       submittedAt: new Date(),
+      verifiedAt: null,
+      comments: null
     };
+
 
     await user.save();
 
