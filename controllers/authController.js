@@ -132,6 +132,20 @@ class AuthController {
       res.status(500).json({ error: error.message });
     }
   }
+
+  
+static async getKYCStatus(req, res) {
+  try {
+    const user = await User.findById(req.params.userId).select('kyc.status'); // juste le status KYC
+    if (!user) return res.status(404).json({ message: 'Utilisateur introuvable' });
+
+    res.json({ status: user.kyc?.status || 'non_verifie' }); // valeur par défaut
+  } catch (error) {
+    console.error('Erreur récupération KYC status:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+}
+
 }
 
 module.exports = AuthController;

@@ -24,4 +24,6 @@ router.post(
   AuthController.submitKYC
 );
 
+router.get('/:userId/kyc', AuthController.getKYCStatus);
+
 module.exports = router;
