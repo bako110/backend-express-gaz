@@ -66,7 +66,7 @@ const distributorSchema = new mongoose.Schema({
   // ------------------- Transactions -------------------
   transactions: [
     {
-      transactionId: { type: String, unique: true, required: true }, // identifiant unique
+      transactionId: { type: String,  required: true }, // identifiant unique
       type: {
         type: String,
         enum: ['vente', 'retrait', 'approvisionnement', 'commission', 'autre'],
