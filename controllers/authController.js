@@ -1,5 +1,7 @@
 const UserService = require('../services/authService');
 const jwt = require('jsonwebtoken');
+const User = require('../models/user'); // adapte le chemin selon ton projet
+
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret123'; // ⚠️ changer en prod
 const JWT_EXPIRES_IN = '7d'; // Durée de validité du token
@@ -136,15 +138,20 @@ class AuthController {
   
 static async getKYCStatus(req, res) {
   try {
-    const user = await User.findById(req.params.userId).select('kyc.status'); // juste le status KYC
-    if (!user) return res.status(404).json({ message: 'Utilisateur introuvable' });
+    const user = await User.findById(req.params.userId).select('kyc.status');
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur introuvable' });
+    }
 
-    res.json({ status: user.kyc?.status || 'non_verifie' }); // valeur par défaut
+    res.json({ status: user.kyc?.status || 'non_verifie' });
   } catch (error) {
     console.error('Erreur récupération KYC status:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
+    res.status(500).json({ 
+      message: error.message || 'Erreur serveur lors de la récupération du KYC' 
+    });
   }
 }
+
 
 }
 
