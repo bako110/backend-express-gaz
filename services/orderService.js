@@ -48,15 +48,54 @@ class CommandeService {
 
     console.log("🧾 Distributeur trouvé :", distributor._id.toString(), distributor.name || distributor.user?.name);
 
-    const distributorProduct = distributor.products.find(
+    // 🔍 CORRECTION : Afficher tous les produits disponibles pour debug
+    console.log("📦 Produits disponibles chez le distributeur:");
+    distributor.products.forEach((p, index) => {
+      console.log(`   ${index + 1}. ${p.name} | Type: ${p.type} | FuelType: ${p.fuelType} | Stock: ${p.stock}`);
+    });
+
+    // 🔍 CORRECTION : Recherche du produit avec différents critères
+    let distributorProduct = distributor.products.find(
       (p) => p.name === product.name && p.type === product.type
     );
 
-    if (!distributorProduct || distributorProduct.stock < product.quantity) {
+    // Si pas trouvé avec type, essayer avec fuelType
+    if (!distributorProduct) {
+      console.log("🔍 Recherche alternative avec fuelType...");
+      distributorProduct = distributor.products.find(
+        (p) => p.name === product.name && p.fuelType === product.type
+      );
+    }
+
+    // Si toujours pas trouvé, essayer seulement par nom
+    if (!distributorProduct) {
+      console.log("🔍 Recherche par nom seulement...");
+      distributorProduct = distributor.products.find(
+        (p) => p.name === product.name
+      );
+    }
+
+    if (!distributorProduct) {
+      console.log("❌ Aucun produit correspondant trouvé");
+      console.log("🔍 Produit recherché:", product);
       throw new Error("Produit indisponible ou stock insuffisant.");
     }
 
-    console.log("🧾 Produit trouvé chez le distributeur :", distributorProduct.name, "Stock:", distributorProduct.stock);
+    if (distributorProduct.stock < product.quantity) {
+      console.log("❌ Stock insuffisant:", {
+        stockDisponible: distributorProduct.stock,
+        quantiteDemandee: product.quantity
+      });
+      throw new Error("Stock insuffisant pour ce produit.");
+    }
+
+    console.log("✅ Produit trouvé chez le distributeur :", {
+      nom: distributorProduct.name,
+      type: distributorProduct.type,
+      fuelType: distributorProduct.fuelType,
+      stock: distributorProduct.stock,
+      prix: distributorProduct.price
+    });
 
     const productPrice = product.price * product.quantity;
     const totalOrder = productPrice + (deliveryFee || 0);
@@ -74,9 +113,16 @@ class CommandeService {
       qrCodeDataUrl = null;
     }
 
+    // CORRECTION : Utiliser les bonnes données du produit distributeur
     const clientOrder = {
       _id: orderId,
-      products: [product],
+      products: [{
+        name: distributorProduct.name,
+        type: distributorProduct.type, // Utiliser le type du distributeur
+        fuelType: distributorProduct.fuelType, // Ajouter le fuelType
+        quantity: product.quantity,
+        price: distributorProduct.price // Utiliser le prix du distributeur
+      }],
       productPrice,
       deliveryFee: deliveryFee || 0,
       total: totalOrder,
@@ -101,7 +147,13 @@ class CommandeService {
       clientName,
       clientPhone,
       address,
-      products: [product],
+      products: [{
+        name: distributorProduct.name,
+        type: distributorProduct.type, // Utiliser le type du distributeur
+        fuelType: distributorProduct.fuelType, // Ajouter le fuelType
+        quantity: product.quantity,
+        price: distributorProduct.price // Utiliser le prix du distributeur
+      }],
       productPrice,
       deliveryFee: deliveryFee || 0,
       total: totalOrder,
@@ -169,6 +221,7 @@ class CommandeService {
       distance
     };
   }
+
 
   /**
    * Assignation du livreur via un service séparé.

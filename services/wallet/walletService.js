@@ -72,7 +72,14 @@ exports.updateWallet = async (clientId, credit, transaction) => {
 
   await client.save();
 
-  return { balance: client.credit, transaction };
+  return { 
+    balance: client.credit, 
+    transaction: {
+      type,
+      amount,
+      date: transaction.date || new Date()
+    }
+  };
 };
 
 /**
@@ -83,19 +90,28 @@ exports.getBalance = async (userId) => {
     // -------------------- LIVREUR --------------------
     const livreur = await Livreur.findOne({ user: userId });
     if (livreur) {
-      return { balance: livreur.wallet?.balance || 0 };
+      return { 
+        balance: livreur.wallet?.balance ?? 0,
+        userType: 'livreur'
+      };
     }
 
     // -------------------- DISTRIBUTEUR --------------------
     const distributor = await Distributor.findOne({ user: userId });
     if (distributor) {
-      return { balance: distributor.revenue || 0 };
+      return { 
+        balance: distributor.revenue ?? 0,
+        userType: 'distributeur'
+      };
     }
 
     // -------------------- CLIENT --------------------
     const client = await Client.findOne({ user: userId });
     if (client) {
-      return { balance: client.credit || 0 };
+      return { 
+        balance: client.credit ?? 0,
+        userType: 'client'
+      };
     }
 
     // ❌ Aucun trouvé
@@ -104,5 +120,50 @@ exports.getBalance = async (userId) => {
   } catch (error) {
     console.error("❌ Erreur getBalance service:", error.message);
     throw new Error(`Impossible de récupérer le solde : ${error.message}`);
+  }
+};
+
+/**
+ * Récupère les détails complets du portefeuille
+ */
+exports.getWalletDetails = async (userId) => {
+  try {
+    // -------------------- LIVREUR --------------------
+    const livreur = await Livreur.findOne({ user: userId });
+    if (livreur) {
+      return {
+        balance: livreur.wallet?.balance ?? 0,
+        transactions: livreur.wallet?.transactions ?? [],
+        userType: 'livreur',
+        walletId: livreur.wallet?._id || null
+      };
+    }
+
+    // -------------------- DISTRIBUTEUR --------------------
+    const distributor = await Distributor.findOne({ user: userId });
+    if (distributor) {
+      return {
+        balance: distributor.revenue ?? 0,
+        transactions: distributor.transactions ?? [],
+        userType: 'distributeur'
+      };
+    }
+
+    // -------------------- CLIENT --------------------
+    const client = await Client.findOne({ user: userId });
+    if (client) {
+      return {
+        balance: client.credit ?? 0,
+        transactions: client.walletTransactions ?? [],
+        userType: 'client'
+      };
+    }
+
+    // ❌ Aucun trouvé
+    throw new Error("Aucun utilisateur trouvé avec cet user ID");
+
+  } catch (error) {
+    console.error("❌ Erreur getWalletDetails service:", error.message);
+    throw new Error(`Impossible de récupérer les détails du portefeuille : ${error.message}`);
   }
 };

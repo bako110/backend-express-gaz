@@ -15,6 +15,7 @@ const distributorSchema = new mongoose.Schema({
       name: { type: String, required: true },       // "Butane 13kg"
       type: { type: String, required: true },       // "Orix", "Pezaz", etc.
       stock: { type: Number, default: 0 },
+      fuelType: { type: String, required: true, default: 'oryx' }, 
       minStock: { type: Number, default: 10 },
       price: { type: Number, required: true },
       sales: { type: Number, default: 0 },

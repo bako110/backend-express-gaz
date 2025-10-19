@@ -26,6 +26,7 @@ const clientSchema = new mongoose.Schema({
         {
           name: { type: String, required: true },
           type: { type: String, required: true },
+           fuelType: { type: String, required: true }, 
           quantity: { type: Number, required: true },
           price: { type: Number, required: true },
         }
