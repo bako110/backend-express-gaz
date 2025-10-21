@@ -10,32 +10,33 @@ class AuthController {
   // ====================
   // INSCRIPTION
   // ====================
-  static async register(req, res) {
-    try {
-      const { name, phone, pin, userType } = req.body;
+      static async register(req, res) {
+      try {
+        const { name, phone, pin, userType, neighborhood } = req.body;
 
-      if (!name || !phone || !pin || !userType) {
-        return res.status(400).json({ message: 'Tous les champs sont requis' });
+        if (!name || !phone || !pin || !userType || !neighborhood) {
+          return res.status(400).json({ message: 'Tous les champs sont requis' });
+        }
+
+        const { user, profile } = await UserService.registerUser({
+          name,
+          phone,
+          pin,
+          userType,
+          neighborhood, // Ajout du quartier
+        });
+
+        res.status(201).json({
+          message: 'Inscription réussie',
+          user,
+          profile,
+        });
+      } catch (error) {
+        res
+          .status(400)
+          .json({ message: error.message || 'Erreur lors de l’inscription' });
       }
-
-      const { user, profile } = await UserService.registerUser({
-        name,
-        phone,
-        pin,
-        userType,
-      });
-
-      res.status(201).json({
-        message: 'Inscription réussie',
-        user,
-        profile,
-      });
-    } catch (error) {
-      res
-        .status(400)
-        .json({ message: error.message || 'Erreur lors de l’inscription' });
     }
-  }
 
   // ====================
   // CONNEXION AVEC userId + PIN

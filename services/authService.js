@@ -25,85 +25,90 @@ class UserService {
   }
 
   // ------------------- INSCRIPTION -------------------
-  static async registerUser({ name, phone, pin, userType, address, zone }) {
-    const existingUser = await User.findOne({ phone });
-    if (existingUser) throw new Error('Un compte existe déjà avec ce numéro');
+  // ------------------- INSCRIPTION -------------------
+static async registerUser({ name, phone, pin, userType, address, zone, neighborhood }) {
+  const existingUser = await User.findOne({ phone });
+  if (existingUser) throw new Error('Un compte existe déjà avec ce numéro');
 
-    const avatarUrl = this.generateDefaultAvatar(name);
-    const user = new User({ name, phone, pin, userType, photo: avatarUrl });
-    await user.save();
+  const avatarUrl = this.generateDefaultAvatar(name);
+  const user = new User({ name, phone, pin, userType, photo: avatarUrl, neighborhood });
+  await user.save();
 
-    let profileData = null;
-    try {
-      if (userType === 'client') {
-        profileData = await Client.findOneAndUpdate(
-          { user: user._id },
-          {
-            $setOnInsert: {
-              user: user._id,
-              address: address || '',
-              credit: 0,
-              walletTransactions: [],
-              produits: [],
-              orders: [],
-              historiqueCommandes: []
-            }
-          },
-          { new: true, upsert: true }
-        );
-      } else if (userType === 'distributeur') {
-        profileData = await Distributor.findOneAndUpdate(
-          { user: user._id },
-          {
-            $setOnInsert: {
-              user: user._id,
-              address: address || '',
-              zone: zone || '',
-              revenue: 0,
-              balance: 0,
-              products: [],
-              orders: [],
-              deliveries: []
-            }
-          },
-          { new: true, upsert: true }
-        );
-      } else if (userType === 'livreur') {
-        profileData = await Livreur.findOneAndUpdate(
-          { user: user._id },
-          {
-            $setOnInsert: {
-              user: user._id,
-              zone: zone || '',
-              vehicleType: 'Moto',
-              status: 'disponible',
-              totalLivraisons: 0,
-              currentDeliveries: [],
-              deliveryHistory: []
-            }
-          },
-          { new: true, upsert: true }
-        );
-      } else {
-        throw new Error("Type d'utilisateur invalide");
-      }
-
-      return {
-        success: true,
-        user: {
-          id: user._id.toString(),
-          name: user.name,
-          phone: user.phone,
-          userType: user.userType,
-          photo: user.photo,
+  let profileData = null;
+  try {
+    if (userType === 'client') {
+      profileData = await Client.findOneAndUpdate(
+        { user: user._id },
+        {
+          $setOnInsert: {
+            user: user._id,
+            address: address || '',
+            neighborhood: neighborhood || '', // Ajout du quartier pour le client
+            credit: 0,
+            walletTransactions: [],
+            produits: [],
+            orders: [],
+            historiqueCommandes: []
+          }
         },
-        profile: profileData.toObject(),
-      };
-    } catch (error) {
-      await User.findByIdAndDelete(user._id);
-      throw new Error("Échec lors de la création du profil associé : " + error.message);
+        { new: true, upsert: true }
+      );
+    } else if (userType === 'distributeur') {
+      profileData = await Distributor.findOneAndUpdate(
+        { user: user._id },
+        {
+          $setOnInsert: {
+            user: user._id,
+            address: address || '',
+            zone: zone || '',
+            neighborhood: neighborhood || '', // Ajout du quartier pour le distributeur
+            revenue: 0,
+            balance: 0,
+            products: [],
+            orders: [],
+            deliveries: []
+          }
+        },
+        { new: true, upsert: true }
+      );
+    } else if (userType === 'livreur') {
+      profileData = await Livreur.findOneAndUpdate(
+        { user: user._id },
+        {
+          $setOnInsert: {
+            user: user._id,
+            zone: zone || '',
+            neighborhood: neighborhood || '', // Ajout du quartier pour le livreur
+            vehicleType: 'Moto',
+            status: 'disponible',
+            totalLivraisons: 0,
+            currentDeliveries: [],
+            deliveryHistory: []
+          }
+        },
+        { new: true, upsert: true }
+      );
+    } else {
+      throw new Error("Type d'utilisateur invalide");
     }
+
+    return {
+      success: true,
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        phone: user.phone,
+        userType: user.userType,
+        photo: user.photo,
+        neighborhood: user.neighborhood // Ajout du quartier dans la réponse
+      },
+      profile: profileData.toObject(),
+    };
+  } catch (error) {
+    await User.findByIdAndDelete(user._id);
+    throw new Error("Échec lors de la création du profil associé : " + error.message);
   }
+}
 
   // ------------------- LOGIN AVEC PIN -------------------
   static async loginWithPin({ userId, pin, latitude, longitude }) {

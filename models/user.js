@@ -15,6 +15,12 @@ const userSchema = new mongoose.Schema(
       unique: true,
       match: [/^[0-9+\-\s()]+$/, 'Numéro de téléphone invalide'],
     },
+    // 🆕 Nouveau champ quartier
+    neighborhood: {
+      type: String,
+      required: [false, 'Le quartier est requis'],
+      trim: true,
+    },
     pin: {
       type: String,
       required: [true, 'Le code PIN est requis'],
@@ -77,7 +83,7 @@ userSchema.methods.updateLocation = function (locationData) {
   this.lastLocation = {
     latitude: locationData.latitude,
     longitude: locationData.longitude,
-    neighborhood: locationData.neighborhood || 'Quartier non identifié',
+    neighborhood: locationData.neighborhood || this.neighborhood || 'Quartier non identifié',
     timestamp: new Date(),
     accuracy: locationData.accuracy || null,
     altitude: locationData.altitude || null,
