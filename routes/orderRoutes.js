@@ -18,16 +18,21 @@ router.put(
 );
 
 // ------------------- Route pour marquer une commande comme livrée -------------------
-router.put(
-  '/:orderId/delivered',
-  CommandeController.markAsDelivered
-);
+// router.put(
+//   '/:orderId/delivered',
+//   CommandeController.markAsDelivered
+// );
 
 // ------------------- Route pour récupérer toutes les commandes en cours de livraison -------------------
 router.get(
   '/en-cours',
   CommandeController.getOrdersEnLivraison
 );
+
+
+// Route pour valider une livraison avec code
+router.post('/:orderId/validate-delivery', CommandeController.validateDelivery);
+
 
 // ------------------- Route pour récupérer l'historique des commandes d'un client -------------------
 router.get(

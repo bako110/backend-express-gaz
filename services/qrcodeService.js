@@ -3,12 +3,12 @@ const Client = require('../models/client');
 class CommandeService {
 
   /**
-   * Récupère le QR code d'une commande dans l'historique d'un client
+   * Récupère le code de validation d'une commande dans l'historique d'un client
    * @param {String} userId - ID de l'utilisateur
    * @param {String} orderId - ID de la commande
-   * @returns {String} qrCode - Le QR code en base64
+   * @returns {String} validationCode - Le code de validation
    */
-  static async getQrCodeFromHistory(userId, orderId) {
+  static async getValidationCodeFromHistory(userId, orderId) {
     if (!userId) throw new Error("User ID manquant.");
     if (!orderId) throw new Error("Order ID manquant.");
 
@@ -25,7 +25,9 @@ class CommandeService {
 
     if (!order) throw new Error("Commande non trouvée.");
 
-    return order.qrCode || null;
+    // Retourne le code de validation pour les commandes en cours
+    // ou orderCode pour les commandes historiques
+    return order.validationCode || order.orderCode || null;
   }
 }
 

@@ -16,7 +16,10 @@ const locationRoutes = require('./routes/locationRoute');
 const feeRoutes = require('./routes/frais');
 const notificationRoutes = require('./routes/notificationRoute');
 const qrCodeRoutes = require('./routes/qrcodeRoute');
-
+const userRoutes = require('./routes/userRoutes');
+// const userDataRoutes = require('./routes/userDataRoutes');
+// const transactionRoutes = require('./routes/transactionRoutes');
+// const orderAdminRoutes = require('./routes/orderAdminRoutes');
 // Cloudinary
 const cloudinary = require('./cloudinaryConfig');
 
@@ -49,6 +52,11 @@ app.use('/api/location', locationRoutes);
 app.use('/api/delivery-info', feeRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/commande', qrCodeRoutes);
+app.use('/api/users', userRoutes);
+// app.use('/api/user-data', userDataRoutes);
+// app.use('/api/transactions', transactionRoutes);
+// app.use('/api/admin/orders', orderAdminRoutes);
+
 
 // ==============================
 //      Route test

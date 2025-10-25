@@ -26,7 +26,7 @@ const clientSchema = new mongoose.Schema({
         {
           name: { type: String, required: true },
           type: { type: String, required: true },
-           fuelType: { type: String, required: true }, 
+          fuelType: { type: String, required: true }, 
           quantity: { type: Number, required: true },
           price: { type: Number, required: true },
         }
@@ -54,9 +54,10 @@ const clientSchema = new mongoose.Schema({
       distance: { type: Number, default: 0 },           // distance km entre client et distributeur
       livreurId: { type: mongoose.Schema.Types.ObjectId, ref: 'Livreur', default: null },
       scheduledAt: { type: Date },                       // Date prévue pour la livraison
+      deliveredAt: { type: Date },                       // Date de livraison effective
 
-      // ------------------- QR code -------------------
-      qrCode: { type: String }                          // QR code en base64 pour la commande
+      // ------------------- Code de validation numérique -------------------
+      validationCode: { type: String, required: true }   // 🔢 Code à 6 chiffres pour validation
     }
   ],
 
@@ -80,8 +81,8 @@ const clientSchema = new mongoose.Schema({
       clientPhone: { type: String },
       distributorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Distributor' },
       distributorName: { type: String },
-      livreurId: { type: mongoose.Schema.Types.ObjectId, ref: 'Livreur' }, // pour historique
-      qrCode: { type: String } // QR code conservé dans l'historique
+      livreurId: { type: mongoose.Schema.Types.ObjectId, ref: 'Livreur' },
+      orderCode: { type: String } // 🔢 Code de validation conservé dans l'historique
     }
   ]
 
