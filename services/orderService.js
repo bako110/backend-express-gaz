@@ -18,541 +18,495 @@ class CommandeService {
   }
 
   /**
-   * Crée une nouvelle commande pour un client et un distributeur.
+   * Génère un ID de transaction unique
    */
-  static async createCommande(commandeData) {
-    const {
-      userId,
-      distributorId,
-      product,
-      address,
-      clientName,
-      clientPhone,
-      priority,
-      clientLocation,
-      distance,
-      deliveryFee
-    } = commandeData;
-
-    console.log("🟢 [CREATE_COMMANDE] Données reçues:", commandeData);
-
-    if (!userId) throw new Error("User ID manquant.");
-    if (!distributorId || !mongoose.Types.ObjectId.isValid(distributorId))
-      throw new Error("Distributor ID invalide.");
-
-    // 🔍 Recherche du client via le champ 'user' qui référence l'User ID
-    const client = await Client.findOne({ user: userId });
-    if (!client) throw new Error("Client introuvable pour cet utilisateur.");
-
-    console.log("🧾 [CREATE_COMMANDE] Client trouvé:", client._id.toString());
-
-    const distributor = await Distributor.findById(distributorId);
-    if (!distributor) throw new Error("Distributeur non trouvé.");
-
-    console.log("🧾 [CREATE_COMMANDE] Distributeur trouvé:", distributor._id.toString());
-
-    // 🔍 CORRECTION : Afficher tous les produits disponibles pour debug
-    console.log("📦 [CREATE_COMMANDE] Produits disponibles chez le distributeur:");
-    distributor.products.forEach((p, index) => {
-      console.log(`   ${index + 1}. ${p.name} | Type: ${p.type} | FuelType: ${p.fuelType} | Stock: ${p.stock}`);
-    });
-
-    // 🔍 CORRECTION : Recherche du produit avec différents critères
-    let distributorProduct = distributor.products.find(
-      (p) => p.name === product.name && p.type === product.type
-    );
-
-    // Si pas trouvé avec type, essayer avec fuelType
-    if (!distributorProduct) {
-      console.log("🔍 [CREATE_COMMANDE] Recherche alternative avec fuelType...");
-      distributorProduct = distributor.products.find(
-        (p) => p.name === product.name && p.fuelType === product.type
-      );
-    }
-
-    // Si toujours pas trouvé, essayer seulement par nom
-    if (!distributorProduct) {
-      console.log("🔍 [CREATE_COMMANDE] Recherche par nom seulement...");
-      distributorProduct = distributor.products.find(
-        (p) => p.name === product.name
-      );
-    }
-
-    if (!distributorProduct) {
-      console.log("❌ [CREATE_COMMANDE] Aucun produit correspondant trouvé");
-      console.log("🔍 [CREATE_COMMANDE] Produit recherché:", product);
-      throw new Error("Produit indisponible ou stock insuffisant.");
-    }
-
-    if (distributorProduct.stock < product.quantity) {
-      console.log("❌ [CREATE_COMMANDE] Stock insuffisant:", {
-        stockDisponible: distributorProduct.stock,
-        quantiteDemandee: product.quantity
-      });
-      throw new Error("Stock insuffisant pour ce produit.");
-    }
-
-    console.log("✅ [CREATE_COMMANDE] Produit trouvé:", {
-      nom: distributorProduct.name,
-      type: distributorProduct.type,
-      fuelType: distributorProduct.fuelType,
-      stock: distributorProduct.stock,
-      prix: distributorProduct.price
-    });
-
-    const productPrice = product.price * product.quantity;
-    const totalOrder = productPrice + (deliveryFee || 0);
-    const orderId = new mongoose.Types.ObjectId();
-    const now = new Date();
-    const deliveryEnum = (deliveryFee && deliveryFee >= 0) ? "oui" : "non";
-
-    // 🔢 Génération d'un code de validation numérique à 6 chiffres
-    const validationCode = this.generateValidationCode();
-    console.log("✅ [CREATE_COMMANDE] Code de validation généré:", validationCode, "pour commande:", orderId.toString());
-
-    // CORRECTION : Utiliser les bonnes données du produit distributeur
-    const clientOrder = {
-      _id: orderId,
-      products: [{
-        name: distributorProduct.name,
-        type: distributorProduct.type,
-        fuelType: distributorProduct.fuelType,
-        quantity: product.quantity,
-        price: distributorProduct.price
-      }],
-      productPrice,
-      deliveryFee: deliveryFee || 0,
-      total: totalOrder,
-      address,
-      clientName,
-      clientPhone,
-      distributorId: distributor._id,
-      distributorName: distributor.user?.name || distributor.name || "Nom non défini",
-      status: 'nouveau',
-      priority,
-      orderTime: now,
-      delivery: deliveryEnum,
-      livreurId: null,
-      clientLocation,
-      distance,
-      validationCode: validationCode
-    };
-
-    const distributorOrder = {
-      _id: orderId,
-      clientId: client._id,
-      clientName,
-      clientPhone,
-      address,
-      products: [{
-        name: distributorProduct.name,
-        type: distributorProduct.type,
-        fuelType: distributorProduct.fuelType,
-        quantity: product.quantity,
-        price: distributorProduct.price
-      }],
-      productPrice,
-      deliveryFee: deliveryFee || 0,
-      total: totalOrder,
-      status: 'nouveau',
-      priority,
-      orderTime: now,
-      distributorName: distributor.user?.name || distributor.name || "Nom non défini",
-      livreurId: null,
-      delivery: deliveryEnum,
-      clientLocation,
-      distance,
-      validationCode: validationCode
-    };
-
-    console.log("🧾 [CREATE_COMMANDE] Création commande - ID:", orderId.toString(), "Code:", validationCode);
-
-    // Mise à jour du client
-    client.orders.push(clientOrder);
-    client.credit = (client.credit || 0) - totalOrder;
-    client.walletTransactions.push({
-      type: 'retrait',
-      amount: totalOrder,
-      date: now,
-      description: `Commande ${orderId} payée (Produit: ${productPrice} + Livraison: ${deliveryFee || 0})`
-    });
-
-    // Mise à jour du distributeur
-    distributor.orders.push(distributorOrder);
-    distributorProduct.stock -= product.quantity;
-
-    await client.save();
-    await distributor.save();
-
-    console.log("✅ [CREATE_COMMANDE] Commande sauvegardée avec succès");
-
-    // 🔔 NOTIFICATION AU DISTRIBUTEUR
-    try {
-      await NotificationService.notifyDistributor(
-        distributorId,
-        'new_order',
-        {
-          orderId: orderId.toString(),
-          orderNumber: `CMD-${orderId.toString().slice(-6)}`,
-          clientName: clientName,
-          clientPhone: clientPhone,
-          total: totalOrder,
-          products: [product],
-          address: address,
-          distance: distance,
-          deliveryFee: deliveryFee || 0,
-          validationCode: validationCode
-        }
-      );
-      console.log("📨 [CREATE_COMMANDE] Notification envoyée au distributeur avec code:", validationCode);
-    } catch (notificationError) {
-      console.error("❌ [CREATE_COMMANDE] Erreur envoi notification:", notificationError);
-    }
-
-    return {
-      success: true,
-      message: "Commande créée avec succès !",
-      clientOrder,
-      distributorOrder,
-      deliveryFee: deliveryFee || 0,
-      distance,
-      validationCode: validationCode
-    };
+  static generateTransactionId() {
+    return `TX-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
   }
 
   /**
- * VALIDATION DE LIVRAISON AVEC CODE + GESTION COMPLÈTE DES PAIEMENTS
- * Version corrigée - Recherche le livreur par user ID
- */
-static async validateAndCompleteDelivery(orderId, enteredCode, livreurUserId) {
-  try {
-    console.log("=".repeat(80));
-    console.log("🔢 [VALIDATE_DELIVERY] DÉBUT VALIDATION - VERSION CORRIGÉE");
-    console.log("📦 Order ID:", orderId);
-    console.log("⌨️  Code reçu du frontend:", enteredCode);
-    console.log("👤 Livreur User ID:", livreurUserId);
-    console.log("=".repeat(80));
+   * Crée une nouvelle commande pour un client et un distributeur.
+   */
+  static async createCommande(commandeData) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    // -------------------- 1️⃣ VÉRIFICATION DU CODE CHEZ LE CLIENT --------------------
-    console.log("🔍 [VALIDATE_DELIVERY] Recherche de la commande chez le client...");
-    const client = await Client.findOne({ "orders._id": orderId });
-    if (!client) {
-      console.log("❌ [VALIDATE_DELIVERY] Commande non trouvée chez le client");
-      throw new Error("Commande non trouvée");
-    }
+    try {
+      const {
+        userId,
+        distributorId,
+        product,
+        address,
+        clientName,
+        clientPhone,
+        priority,
+        clientLocation,
+        distance,
+        deliveryFee = 0
+      } = commandeData;
 
-    const clientOrder = client.orders.id(orderId);
-    if (!clientOrder) {
-      console.log("❌ [VALIDATE_DELIVERY] Commande non trouvée dans les orders du client");
-      throw new Error("Commande non trouvée");
-    }
+      console.log("🟢 [CREATE_COMMANDE] Données reçues:", commandeData);
 
-    console.log("✅ [VALIDATE_DELIVERY] Commande trouvée chez client:", {
-      orderId: orderId,
-      statut: clientOrder.status,
-      livreurAssigné: clientOrder.livreurId,
-      codeAttendu: clientOrder.validationCode
-    });
+      if (!userId) throw new Error("User ID manquant.");
+      if (!distributorId || !mongoose.Types.ObjectId.isValid(distributorId))
+        throw new Error("Distributor ID invalide.");
 
-    // Vérifier le code de validation
-    console.log("🔐 [VALIDATE_DELIVERY] Vérification du code...");
-    console.log("   Code saisi:", enteredCode);
-    console.log("   Code attendu:", clientOrder.validationCode);
+      // 🔍 Recherche du client via le champ 'user' qui référence l'User ID
+      const client = await Client.findOne({ user: userId }).session(session);
+      if (!client) throw new Error("Client introuvable pour cet utilisateur.");
 
-    if (clientOrder.validationCode !== enteredCode) {
-      console.log("❌ [VALIDATE_DELIVERY] CODE INCORRECT");
-      return {
-        success: false,
-        message: "Code de validation incorrect",
-        codeValid: false,
+      console.log("🧾 [CREATE_COMMANDE] Client trouvé:", client._id.toString());
+
+      const distributor = await Distributor.findById(distributorId).session(session);
+      if (!distributor) throw new Error("Distributeur non trouvé.");
+
+      console.log("🧾 [CREATE_COMMANDE] Distributeur trouvé:", distributor._id.toString());
+
+      // 🔍 Recherche du produit
+      console.log("📦 [CREATE_COMMANDE] Produits disponibles chez le distributeur:");
+      distributor.products.forEach((p, index) => {
+        console.log(`   ${index + 1}. ${p.name} | Type: ${p.type} | FuelType: ${p.fuelType} | Stock: ${p.stock} | Prix: ${p.price}`);
+      });
+
+      let distributorProduct = distributor.products.find(
+        (p) => p.name === product.name && p.type === product.type
+      );
+
+      // Recherche alternative
+      if (!distributorProduct) {
+        distributorProduct = distributor.products.find(
+          (p) => p.name === product.name && p.fuelType === product.type
+        );
+      }
+
+      if (!distributorProduct) {
+        distributorProduct = distributor.products.find(
+          (p) => p.name === product.name
+        );
+      }
+
+      if (!distributorProduct) {
+        console.log("❌ [CREATE_COMMANDE] Aucun produit correspondant trouvé");
+        throw new Error("Produit indisponible ou stock insuffisant.");
+      }
+
+      if (distributorProduct.stock < product.quantity) {
+        console.log("❌ [CREATE_COMMANDE] Stock insuffisant:", {
+          stockDisponible: distributorProduct.stock,
+          quantiteDemandee: product.quantity
+        });
+        throw new Error("Stock insuffisant pour ce produit.");
+      }
+
+      console.log("✅ [CREATE_COMMANDE] Produit trouvé:", {
+        nom: distributorProduct.name,
+        type: distributorProduct.type,
+        fuelType: distributorProduct.fuelType,
+        stock: distributorProduct.stock,
+        prix: distributorProduct.price
+      });
+
+      // 🧮 CALCULS FINANCIERS
+      const productPrice = distributorProduct.price * product.quantity;
+      const totalOrder = productPrice + deliveryFee;
+      const orderId = new mongoose.Types.ObjectId();
+      const now = new Date();
+      const deliveryEnum = deliveryFee > 0 ? "oui" : "non";
+
+      // 🔢 Génération d'un code de validation
+      const validationCode = this.generateValidationCode();
+      console.log("✅ [CREATE_COMMANDE] Code de validation généré:", validationCode);
+
+      // 💰 VÉRIFICATION DU SOLDE DU CLIENT
+      const ancienSoldeClient = client.credit || 0;
+      if (ancienSoldeClient < totalOrder) {
+        throw new Error(`Solde insuffisant. Solde actuel: ${ancienSoldeClient}, Montant requis: ${totalOrder}`);
+      }
+
+      console.log("💰 [CREATE_COMMANDE] Solde client vérifié:", {
+        ancienSolde: ancienSoldeClient,
+        montantCommande: totalOrder,
+        nouveauSolde: ancienSoldeClient - totalOrder
+      });
+
+      // 📦 CRÉATION DES COMMANDES
+      const clientOrder = {
+        _id: orderId,
+        products: [{
+          name: distributorProduct.name,
+          type: distributorProduct.type,
+          fuelType: distributorProduct.fuelType,
+          quantity: product.quantity,
+          price: distributorProduct.price,
+          total: productPrice
+        }],
+        productPrice,
+        deliveryFee,
+        total: totalOrder,
+        address,
+        clientName,
+        clientPhone,
+        distributorId: distributor._id,
+        distributorName: distributor.user?.name || distributor.name || "Distributeur",
+        status: 'nouveau',
+        priority,
+        orderTime: now,
+        delivery: deliveryEnum,
+        livreurId: null,
+        clientLocation,
+        distance,
+        validationCode
+      };
+
+      const distributorOrder = {
+        _id: orderId,
+        clientId: client._id,
+        clientName,
+        clientPhone,
+        address,
+        products: [{
+          name: distributorProduct.name,
+          type: distributorProduct.type,
+          fuelType: distributorProduct.fuelType,
+          quantity: product.quantity,
+          price: distributorProduct.price,
+          total: productPrice
+        }],
+        productPrice,
+        deliveryFee,
+        total: totalOrder,
+        status: 'nouveau',
+        priority,
+        orderTime: now,
+        distributorName: distributor.user?.name || distributor.name || "Distributeur",
+        livreurId: null,
+        delivery: deliveryEnum,
+        clientLocation,
+        distance,
+        validationCode
+      };
+
+      console.log("🧾 [CREATE_COMMANDE] Création commande - ID:", orderId.toString());
+
+      // 💳 MISE À JOUR FINANCIÈRE CLIENT
+      client.orders.push(clientOrder);
+      client.credit = ancienSoldeClient - totalOrder;
+      
+      const transactionId = this.generateTransactionId();
+      client.walletTransactions.push({
+        transactionId,
+        type: 'retrait',
+        amount: totalOrder,
+        date: now,
+        description: `Paiement commande ${orderId}`,
         details: {
-          codeSaisi: enteredCode,
-          codeAttendu: clientOrder.validationCode
+          productAmount: productPrice,
+          deliveryFee: deliveryFee,
+          products: `${product.quantity}x ${distributorProduct.name}`
+        },
+        newBalance: client.credit
+      });
+
+      // 📦 MISE À JOUR DISTRIBUTEUR
+      distributor.orders.push(distributorOrder);
+      distributorProduct.stock -= product.quantity;
+
+      // Sauvegarde dans la transaction
+      await client.save({ session });
+      await distributor.save({ session });
+
+      // ✅ VALIDATION DE LA TRANSACTION
+      await session.commitTransaction();
+      console.log("✅ [CREATE_COMMANDE] Commande sauvegardée avec succès");
+
+      // 🔔 NOTIFICATION AU DISTRIBUTEUR
+      try {
+        await NotificationService.notifyDistributor(
+          distributorId,
+          'new_order',
+          {
+            orderId: orderId.toString(),
+            orderNumber: `CMD-${orderId.toString().slice(-6)}`,
+            clientName: clientName,
+            clientPhone: clientPhone,
+            total: totalOrder,
+            products: [product],
+            address: address,
+            distance: distance,
+            deliveryFee: deliveryFee,
+            validationCode: validationCode
+          }
+        );
+        console.log("📨 [CREATE_COMMANDE] Notification envoyée au distributeur");
+      } catch (notificationError) {
+        console.error("❌ [CREATE_COMMANDE] Erreur envoi notification:", notificationError);
+      }
+
+      return {
+        success: true,
+        message: "Commande créée avec succès !",
+        orderId: orderId.toString(),
+        clientOrder,
+        deliveryFee: deliveryFee,
+        distance,
+        validationCode: validationCode,
+        financial: {
+          productAmount: productPrice,
+          deliveryFee: deliveryFee,
+          total: totalOrder,
+          clientNewBalance: client.credit
         }
       };
+
+    } catch (error) {
+      await session.abortTransaction();
+      console.error("❌ [CREATE_COMMANDE] Erreur:", error);
+      throw error;
+    } finally {
+      session.endSession();
     }
+  }
 
-    console.log("✅ [VALIDATE_DELIVERY] CODE CORRECT - Validation réussie");
+  /**
+   * VALIDATION DE LIVRAISON AVEC GESTION COMPLÈTE DES PAIEMENTS
+   */
+  static async validateAndCompleteDelivery(orderId, enteredCode, livreurUserId) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    // -------------------- 2️⃣ VÉRIFICATION CHEZ LE LIVREUR --------------------
-    console.log("🚚 [VALIDATE_DELIVERY] Recherche du livreur par user ID...");
-    const livreur = await Livreur.findOne({ user: livreurUserId });
-    
-    if (!livreur) {
-      console.log("❌ [VALIDATE_DELIVERY] Livreur non trouvé avec user ID:", livreurUserId);
-      console.log("🔍 [VALIDATE_DELIVERY] Tentative de recherche par ID direct...");
-      
-      // Tentative de recherche par ID direct au cas où
-      const livreurDirect = await Livreur.findById(livreurUserId);
-      if (!livreurDirect) {
-        console.log("❌ [VALIDATE_DELIVERY] Livreur non trouvé avec ID direct non plus");
+    try {
+      console.log("=".repeat(80));
+      console.log("🔢 [VALIDATE_DELIVERY] DÉBUT VALIDATION");
+      console.log("📦 Order ID:", orderId);
+      console.log("⌨️  Code reçu:", enteredCode);
+      console.log("👤 Livreur User ID:", livreurUserId);
+
+      // 1️⃣ VÉRIFICATION DU CODE CHEZ LE CLIENT
+      console.log("🔍 [VALIDATE_DELIVERY] Recherche commande chez le client...");
+      const client = await Client.findOne({ "orders._id": orderId }).session(session);
+      if (!client) throw new Error("Commande non trouvée chez le client");
+
+      const clientOrder = client.orders.id(orderId);
+      if (!clientOrder) throw new Error("Commande non trouvée dans les orders du client");
+
+      console.log("✅ [VALIDATE_DELIVERY] Commande trouvée:", {
+        statut: clientOrder.status,
+        codeAttendu: clientOrder.validationCode,
+        montantTotal: clientOrder.total
+      });
+
+      // Vérification du code
+      if (clientOrder.validationCode !== enteredCode) {
+        console.log("❌ [VALIDATE_DELIVERY] CODE INCORRECT");
+        await session.abortTransaction();
+        return {
+          success: false,
+          message: "Code de validation incorrect",
+          codeValid: false
+        };
+      }
+
+      console.log("✅ [VALIDATE_DELIVERY] CODE CORRECT");
+
+      // 2️⃣ VÉRIFICATION DU LIVREUR
+      console.log("🚚 [VALIDATE_DELIVERY] Recherche du livreur...");
+      const livreur = await Livreur.findOne({ user: livreurUserId }).session(session);
+      if (!livreur) {
+        console.log("❌ [VALIDATE_DELIVERY] Livreur non trouvé");
+        await session.abortTransaction();
         return {
           success: false,
           message: "Livreur non trouvé",
           codeValid: true,
-          livreurValid: false,
-          details: {
-            livreurUserId: livreurUserId,
-            orderId: orderId
-          }
+          livreurValid: false
         };
       }
-      console.log("✅ [VALIDATE_DELIVERY] Livreur trouvé avec ID direct");
-    }
 
-    const livreurTrouve = livreur || livreurDirect;
-    console.log("📋 [VALIDATE_DELIVERY] Livreur trouvé:", {
-      livreurId: livreurTrouve._id.toString(),
-      user: livreurTrouve.user.toString(),
-      statut: livreurTrouve.status
-    });
+      // Vérifier si le livreur a cette commande
+      const livreurDelivery = livreur.deliveryHistory.find(
+        d => d.orderId && d.orderId.toString() === orderId.toString()
+      );
 
-    // Vérifier si le livreur a cette commande dans son historique
-    const livreurDelivery = livreurTrouve.deliveryHistory.find(
-      d => d.orderId && d.orderId.toString() === orderId.toString()
-    );
+      if (!livreurDelivery || livreurDelivery.status !== 'en_cours') {
+        console.log("❌ [VALIDATE_DELIVERY] Commande non assignée au livreur");
+        await session.abortTransaction();
+        return {
+          success: false,
+          message: "Cette commande ne vous est pas assignée",
+          codeValid: true,
+          livreurValid: false
+        };
+      }
 
-    console.log("📋 [VALIDATE_DELIVERY] État du livreur:", {
-      livreurId: livreurTrouve._id.toString(),
-      statut: livreurTrouve.status,
-      commandeDansHistorique: !!livreurDelivery,
-      statutCommande: livreurDelivery?.status
-    });
+      console.log("✅ [VALIDATE_DELIVERY] Livreur validé");
 
-    if (!livreurDelivery) {
-      console.log("❌ [VALIDATE_DELIVERY] Commande non trouvée chez le livreur");
-      return {
-        success: false,
-        message: "Cette commande ne vous est pas assignée",
-        codeValid: true,
-        livreurValid: false,
-        details: {
-          livreurId: livreurTrouve._id.toString(),
-          orderId: orderId
-        }
-      };
-    }
+      const now = new Date();
 
-    if (livreurDelivery.status !== 'en_cours') {
-      console.log("❌ [VALIDATE_DELIVERY] Commande déjà traitée - Statut:", livreurDelivery.status);
-      return {
-        success: false,
-        message: "Cette commande a déjà été traitée",
-        codeValid: true,
-        livreurValid: false,
-        details: {
-          statutActuel: livreurDelivery.status
-        }
-      };
-    }
+      // 3️⃣ MISE À JOUR CLIENT
+      console.log("👤 [VALIDATE_DELIVERY] Mise à jour client...");
+      clientOrder.status = 'livre';
+      clientOrder.deliveredAt = now;
+      clientOrder.livreurId = livreur._id;
 
-    console.log("✅ [VALIDATE_DELIVERY] LIVREUR VALIDÉ - Le livreur a bien cette commande");
+      // Ajouter à l'historique
+      client.historiqueCommandes.push({
+        ...clientOrder.toObject(),
+        date: now,
+        orderCode: clientOrder.validationCode
+      });
 
-    // -------------------- 3️⃣ CORRECTION DE L'ASSIGNATION SI NÉCESSAIRE --------------------
-    if (!clientOrder.livreurId || clientOrder.livreurId.toString() !== livreurTrouve._id.toString()) {
-      console.log("🔄 [VALIDATE_DELIVERY] Correction de l'assignation livreur...");
-      console.log("   Ancien livreurId:", clientOrder.livreurId);
-      console.log("   Nouveau livreurId:", livreurTrouve._id.toString());
+      // Supprimer de la liste des commandes en cours
+      client.orders.pull(orderId);
+      await client.save({ session });
+
+      console.log("✅ [VALIDATE_DELIVERY] Client mis à jour");
+
+      // 4️⃣ MISE À JOUR LIVREUR
+      console.log("🚚 [VALIDATE_DELIVERY] Mise à jour livreur...");
+      const livreurAmount = clientOrder.deliveryFee || 0;
+
+      // Mettre à jour l'historique
+      livreurDelivery.status = 'livre';
+      livreurDelivery.deliveredAt = now;
+      livreurDelivery.amountReceived = livreurAmount;
+
+      // Créditer le portefeuille du livreur
+      if (!livreur.wallet) livreur.wallet = { balance: 0, transactions: [] };
+
+      const ancienSoldeLivreur = livreur.wallet.balance;
+      livreur.wallet.balance += livreurAmount;
       
-      clientOrder.livreurId = livreurTrouve._id;
-      await client.save();
-      console.log("✅ [VALIDATE_DELIVERY] Assignation corrigée chez le client");
-    }
+      const livreurTransactionId = this.generateTransactionId();
+      livreur.wallet.transactions.push({
+        transactionId: livreurTransactionId,
+        amount: livreurAmount,
+        type: 'credit',
+        description: `Frais de livraison - Commande ${orderId}`,
+        date: now,
+        orderId: orderId,
+        clientName: clientOrder.clientName,
+        ancienSolde: ancienSoldeLivreur,
+        nouveauSolde: livreur.wallet.balance
+      });
 
-    const now = new Date();
+      // Statistiques livreur
+      livreur.totalLivraisons = (livreur.totalLivraisons || 0) + 1;
+      livreur.totalRevenue = (livreur.totalRevenue || 0) + livreurAmount;
 
-    // -------------------- 4️⃣ MISE À JOUR CLIENT --------------------
-    console.log("👤 [VALIDATE_DELIVERY] Mise à jour client...");
-    clientOrder.status = 'livre';
-    clientOrder.deliveredAt = now;
-
-    // Ajouter à l'historique du client
-    client.historiqueCommandes.push({
-      products: clientOrder.products,
-      productPrice: clientOrder.productPrice,
-      deliveryFee: clientOrder.deliveryFee,
-      total: clientOrder.total,
-      date: now,
-      status: 'livre',
-      clientName: clientOrder.clientName,
-      clientPhone: clientOrder.clientPhone,
-      distributorId: clientOrder.distributorId,
-      distributorName: clientOrder.distributorName,
-      livreurId: clientOrder.livreurId,
-      orderCode: clientOrder.validationCode
-    });
-
-    // Supprimer de la liste des commandes en cours
-    client.orders.pull(orderId);
-    await client.save();
-    console.log("✅ [VALIDATE_DELIVERY] Client mis à jour - Statut: livré");
-
-    // -------------------- 5️⃣ MISE À JOUR LIVREUR --------------------
-    console.log("🚚 [VALIDATE_DELIVERY] Mise à jour livreur...");
-    
-    const livreurAmount = clientOrder.deliveryFee || 0;
-    console.log("💰 [VALIDATE_DELIVERY] Montant livreur:", livreurAmount);
-
-    // Mettre à jour l'historique de livraison du livreur
-    livreurDelivery.status = 'livre';
-    livreurDelivery.deliveredAt = now;
-    livreurDelivery.amountReceived = livreurAmount;
-    console.log("✅ [VALIDATE_DELIVERY] Historique livreur mis à jour");
-
-    // Créditer le portefeuille du livreur
-    if (!livreurTrouve.wallet) livreurTrouve.wallet = { balance: 0, transactions: [] };
-
-    const ancienSolde = livreurTrouve.wallet.balance;
-    livreurTrouve.wallet.balance += livreurAmount;
-    livreurTrouve.wallet.transactions.push({
-      amount: livreurAmount,
-      type: 'credit',
-      description: `Frais de livraison commande ${orderId} - ${clientOrder.clientName}`,
-      date: now,
-      orderId: orderId
-    });
-
-    livreurTrouve.totalLivraisons = (livreurTrouve.totalLivraisons || 0) + 1;
-    livreurTrouve.totalRevenue = (livreurTrouve.totalRevenue || 0) + livreurAmount;
-
-    console.log("💰 [VALIDATE_DELIVERY] Portefeuille livreur:", {
-      ancienSolde: ancienSolde,
-      montantAjouté: livreurAmount,
-      nouveauSolde: livreurTrouve.wallet.balance
-    });
-
-    // Mettre à jour les livraisons du jour
-    if (Array.isArray(livreurTrouve.todaysDeliveries)) {
-      livreurTrouve.todaysDeliveries = livreurTrouve.todaysDeliveries.filter(
-        d => d.orderId && d.orderId.toString() !== orderId.toString()
-      );
-
-      if (livreurTrouve.todaysDeliveries.length === 0) {
-        livreurTrouve.status = 'disponible';
-        console.log("🔄 [VALIDATE_DELIVERY] Livreur marqué comme disponible");
+      // Mettre à jour les livraisons du jour
+      if (Array.isArray(livreur.todaysDeliveries)) {
+        livreur.todaysDeliveries = livreur.todaysDeliveries.filter(
+          d => d.orderId && d.orderId.toString() !== orderId.toString()
+        );
+        if (livreur.todaysDeliveries.length === 0) {
+          livreur.status = 'disponible';
+        }
       }
-    }
 
-    await livreurTrouve.save();
-    console.log("✅ [VALIDATE_DELIVERY] Livreur mis à jour");
+      await livreur.save({ session });
+      console.log("💰 [VALIDATE_DELIVERY] Livreur crédité:", livreurAmount);
 
-    // -------------------- 6️⃣ MISE À JOUR DISTRIBUTEUR --------------------
-    console.log("🏪 [VALIDATE_DELIVERY] Mise à jour distributeur...");
-    const distributor = await Distributor.findOne({ 'orders._id': orderId });
-    if (!distributor) {
-      console.log("❌ [VALIDATE_DELIVERY] Distributeur non trouvé");
-      throw new Error("Distributeur non trouvé pour cette commande");
-    }
+      // 5️⃣ MISE À JOUR DISTRIBUTEUR
+      console.log("🏪 [VALIDATE_DELIVERY] Mise à jour distributeur...");
+      const distributor = await Distributor.findOne({ 'orders._id': orderId }).session(session);
+      if (!distributor) throw new Error("Distributeur non trouvé");
 
-    const distributorOrder = distributor.orders.id(orderId);
-    if (!distributorOrder) {
-      console.log("❌ [VALIDATE_DELIVERY] Commande non trouvée chez le distributeur");
-      throw new Error("Commande non trouvée dans les commandes du distributeur");
-    }
+      const distributorOrder = distributor.orders.id(orderId);
+      if (!distributorOrder) throw new Error("Commande non trouvée chez le distributeur");
 
-    distributorOrder.status = 'livre';
-    distributorOrder.deliveredAt = now;
-    distributorOrder.livreurId = livreurTrouve._id; // S'assurer que le livreur est assigné
+      distributorOrder.status = 'livre';
+      distributorOrder.deliveredAt = now;
+      distributorOrder.livreurId = livreur._id;
 
-    const distributorAmount = distributorOrder.productPrice || 0;
-    console.log("💰 [VALIDATE_DELIVERY] Montant distributeur:", distributorAmount);
+      const distributorAmount = distributorOrder.productPrice || 0;
 
-    // Créditer le distributeur
-    const ancienRevenue = distributor.revenue || 0;
-    const ancienBalance = distributor.balance || 0;
-    
-    distributor.revenue = ancienRevenue + distributorAmount;
-    distributor.balance = ancienBalance + distributorAmount;
+      // Créditer le distributeur
+      const ancienRevenue = distributor.revenue || 0;
+      const ancienBalance = distributor.balance || 0;
+      
+      distributor.revenue = ancienRevenue + distributorAmount;
+      distributor.balance = ancienBalance + distributorAmount;
 
-    // Ajouter transaction distributeur
-    const transactionId = `TX-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-    distributor.transactions.push({
-      transactionId,
-      type: 'vente',
-      amount: distributorAmount,
-      date: now,
-      description: `Paiement reçu pour la commande ${orderId} - Client: ${clientOrder.clientName}`,
-      relatedOrder: orderId,
-      method: 'cash',
-      status: 'terminee',
-      details: {
-        productAmount: distributorOrder.productPrice,
-        deliveryFee: distributorOrder.deliveryFee,
-        totalOrder: distributorOrder.total
+      // Ajouter transaction distributeur
+      const distributorTransactionId = this.generateTransactionId();
+      distributor.transactions.push({
+        transactionId: distributorTransactionId,
+        type: 'vente',
+        amount: distributorAmount,
+        date: now,
+        description: `Vente commande ${orderId} - ${clientOrder.clientName}`,
+        relatedOrder: orderId,
+        method: 'wallet',
+        status: 'terminee',
+        ancienSolde: ancienBalance,
+        nouveauSolde: distributor.balance,
+        details: {
+          productAmount: distributorOrder.productPrice,
+          deliveryFee: distributorOrder.deliveryFee,
+          totalOrder: distributorOrder.total,
+          products: distributorOrder.products
+        }
+      });
+
+      await distributor.save({ session });
+      console.log("💰 [VALIDATE_DELIVERY] Distributeur crédité:", distributorAmount);
+
+      // ✅ VALIDATION DE LA TRANSACTION
+      await session.commitTransaction();
+      console.log("✅ [VALIDATE_DELIVERY] Transaction validée");
+
+      // 🔔 NOTIFICATIONS
+      try {
+        await NotificationService.notifyDeliveryCompleted(
+          orderId,
+          clientOrder.clientName,
+          livreurAmount,
+          distributorAmount
+        );
+        console.log("📨 [VALIDATE_DELIVERY] Notifications envoyées");
+      } catch (notificationError) {
+        console.error("❌ [VALIDATE_DELIVERY] Erreur notifications:", notificationError);
       }
-    });
 
-    await distributor.save();
-    console.log("✅ [VALIDATE_DELIVERY] Distributeur mis à jour:", {
-      ancienRevenue: ancienRevenue,
-      nouveauRevenue: distributor.revenue,
-      ancienBalance: ancienBalance,
-      nouveauBalance: distributor.balance
-    });
-
-    // -------------------- 7️⃣ NOTIFICATIONS --------------------
-    console.log("📨 [VALIDATE_DELIVERY] Envoi des notifications...");
-    try {
-      await NotificationService.notifyDeliveryCompleted(
-        orderId,
-        clientOrder.clientName,
-        livreurAmount,
-        distributorAmount
-      );
-
-      console.log("💰 [VALIDATE_DELIVERY] Notifications envoyées:");
+      // 📊 RÉSULTAT FINAL
+      console.log("=".repeat(80));
+      console.log("🎉 [VALIDATE_DELIVERY] LIVRAISON VALIDÉE AVEC SUCCÈS");
+      console.log("💰 RÉPARTITION DES FONDS:");
       console.log("   📦 Distributeur:", distributorAmount.toLocaleString(), "FCFA");
       console.log("   🚚 Livreur:", livreurAmount.toLocaleString(), "FCFA");
+      console.log("=".repeat(80));
 
-    } catch (notificationError) {
-      console.error("❌ [VALIDATE_DELIVERY] Erreur envoi notifications:", notificationError);
-    }
-
-    // -------------------- ✅ RÉSULTAT FINAL --------------------
-    console.log("=".repeat(80));
-    console.log("🎉 [VALIDATE_DELIVERY] VALIDATION TERMINÉE AVEC SUCCÈS");
-    console.log("📦 Commande:", orderId);
-    console.log("👤 Client:", clientOrder.clientName);
-    console.log("🚚 Livreur:", livreurTrouve._id.toString());
-    console.log("💰 Montants - Livreur:", livreurAmount, "Distributeur:", distributorAmount);
-    console.log("=".repeat(80));
-
-    return {
-      success: true,
-      message: "✅ Livraison validée avec succès - Paiements distribués",
-      codeValid: true,
-      livreurValid: true,
-      details: {
-        client: {
-          orderId: orderId.toString(),
-          status: 'livre',
-          totalPaid: clientOrder.total
-        },
-        livreur: {
-          amountReceived: livreurAmount,
-          newBalance: livreurTrouve.wallet.balance,
-          ancienBalance: ancienSolde
-        },
-        distributor: {
-          amountReceived: distributorAmount,
-          newBalance: distributor.balance,
-          ancienBalance: ancienBalance,
-          transactionId: transactionId
+      return {
+        success: true,
+        message: "✅ Livraison validée avec succès - Paiements distribués",
+        codeValid: true,
+        livreurValid: true,
+        financial: {
+          totalOrder: clientOrder.total,
+          productAmount: distributorAmount,
+          deliveryFee: livreurAmount,
+          distributor: {
+            amount: distributorAmount,
+            transactionId: distributorTransactionId,
+            newBalance: distributor.balance
+          },
+          livreur: {
+            amount: livreurAmount,
+            transactionId: livreurTransactionId,
+            newBalance: livreur.wallet.balance
+          }
         }
-      },
-      amounts: {
-        totalOrder: clientOrder.total,
-        productAmount: distributorAmount,
-        deliveryFee: livreurAmount
-      }
-    };
+      };
 
-  } catch (error) {
-    console.error("❌ [VALIDATE_DELIVERY] ERREUR CRITIQUE:", error);
-    console.error("Stack trace:", error.stack);
-    throw error;
+    } catch (error) {
+      await session.abortTransaction();
+      console.error("❌ [VALIDATE_DELIVERY] ERREUR CRITIQUE:", error);
+      throw error;
+    } finally {
+      session.endSession();
+    }
   }
-}
+
   /**
    * Assignation du livreur via un service séparé.
    */
@@ -592,47 +546,65 @@ static async validateAndCompleteDelivery(orderId, enteredCode, livreurUserId) {
    * Confirme une commande par le distributeur.
    */
   static async confirmOrder(orderId, distributorId, newStatus) {
-    console.log("✅ [CONFIRM_ORDER] Confirmation commande:", {
-      orderId,
-      distributorId,
-      newStatus
-    });
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    const distributor = await Distributor.findById(distributorId);
-    if (!distributor) throw new Error('Distributeur non trouvé');
-
-    const distOrder = distributor.orders.id(orderId);
-    if (!distOrder) throw new Error('Commande non trouvée chez le distributeur');
-
-    distOrder.status = newStatus;
-    await distributor.save();
-
-    const client = await Client.findOne({ 'orders._id': orderId });
-    if (!client) throw new Error('Commande non trouvée chez le client');
-
-    const clientOrder = client.orders.id(orderId);
-    clientOrder.status = newStatus;
-    await client.save();
-
-    // 🔔 NOTIFICATION AU CLIENT
     try {
-      if (newStatus === 'confirme') {
-        await NotificationService.notifyClient(
-          client._id,
-          'order_accepted',
-          {
-            orderId: orderId.toString(),
-            orderNumber: `CMD-${orderId.toString().slice(-6)}`,
-            distributorName: distributor.user?.name || distributor.name
-          }
-        );
-        console.log("📨 [CONFIRM_ORDER] Notification envoyée au client");
-      }
-    } catch (notificationError) {
-      console.error("❌ [CONFIRM_ORDER] Erreur envoi notification client:", notificationError);
-    }
+      console.log("✅ [CONFIRM_ORDER] Confirmation commande:", {
+        orderId,
+        distributorId,
+        newStatus
+      });
 
-    return { message: 'Commande confirmée avec succès', clientOrder, distOrder };
+      const distributor = await Distributor.findById(distributorId).session(session);
+      if (!distributor) throw new Error('Distributeur non trouvé');
+
+      const distOrder = distributor.orders.id(orderId);
+      if (!distOrder) throw new Error('Commande non trouvée chez le distributeur');
+
+      distOrder.status = newStatus;
+      await distributor.save({ session });
+
+      const client = await Client.findOne({ 'orders._id': orderId }).session(session);
+      if (!client) throw new Error('Commande non trouvée chez le client');
+
+      const clientOrder = client.orders.id(orderId);
+      clientOrder.status = newStatus;
+      await client.save({ session });
+
+      await session.commitTransaction();
+
+      // 🔔 NOTIFICATION AU CLIENT
+      if (newStatus === 'confirme') {
+        try {
+          await NotificationService.notifyClient(
+            client._id,
+            'order_accepted',
+            {
+              orderId: orderId.toString(),
+              orderNumber: `CMD-${orderId.toString().slice(-6)}`,
+              distributorName: distributor.user?.name || distributor.name
+            }
+          );
+          console.log("📨 [CONFIRM_ORDER] Notification envoyée au client");
+        } catch (notificationError) {
+          console.error("❌ [CONFIRM_ORDER] Erreur notification client:", notificationError);
+        }
+      }
+
+      return { 
+        message: 'Commande confirmée avec succès', 
+        clientOrder, 
+        distOrder 
+      };
+
+    } catch (error) {
+      await session.abortTransaction();
+      console.error("❌ [CONFIRM_ORDER] Erreur:", error);
+      throw error;
+    } finally {
+      session.endSession();
+    }
   }
 
   /**
@@ -681,55 +653,87 @@ static async validateAndCompleteDelivery(orderId, enteredCode, livreurUserId) {
    * Rejeter une commande
    */
   static async rejectOrder(orderId, distributorId, reason = "Commande refusée") {
-    console.log("❌ [REJECT_ORDER] Rejet commande:", {
-      orderId,
-      distributorId,
-      reason
-    });
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    const distributor = await Distributor.findById(distributorId);
-    if (!distributor) throw new Error('Distributeur non trouvé');
-
-    const distOrder = distributor.orders.id(orderId);
-    if (!distOrder) throw new Error('Commande non trouvée chez le distributeur');
-
-    distOrder.status = 'annule';
-    await distributor.save();
-
-    const client = await Client.findOne({ 'orders._id': orderId });
-    if (!client) throw new Error('Commande non trouvée chez le client');
-
-    const clientOrder = client.orders.id(orderId);
-    clientOrder.status = 'annule';
-    
-    // Rembourser le client
-    client.credit = (client.credit || 0) + clientOrder.total;
-    client.walletTransactions.push({
-      type: 'recharge',
-      amount: clientOrder.total,
-      date: new Date(),
-      description: `Remboursement commande ${orderId} refusée`
-    });
-    
-    await client.save();
-
-    // 🔔 NOTIFICATION AU CLIENT
     try {
-      await NotificationService.notifyClient(
-        client._id,
-        'order_rejected',
-        {
-          orderId: orderId.toString(),
-          orderNumber: `CMD-${orderId.toString().slice(-6)}`,
-          reason: reason
-        }
-      );
-      console.log("📨 [REJECT_ORDER] Notification de refus envoyée au client");
-    } catch (notificationError) {
-      console.error("❌ [REJECT_ORDER] Erreur envoi notification refus:", notificationError);
-    }
+      console.log("❌ [REJECT_ORDER] Rejet commande:", {
+        orderId,
+        distributorId,
+        reason
+      });
 
-    return { message: 'Commande refusée avec succès', clientOrder, distOrder };
+      const distributor = await Distributor.findById(distributorId).session(session);
+      if (!distributor) throw new Error('Distributeur non trouvé');
+
+      const distOrder = distributor.orders.id(orderId);
+      if (!distOrder) throw new Error('Commande non trouvée chez le distributeur');
+
+      distOrder.status = 'annule';
+      await distributor.save({ session });
+
+      const client = await Client.findOne({ 'orders._id': orderId }).session(session);
+      if (!client) throw new Error('Commande non trouvée chez le client');
+
+      const clientOrder = client.orders.id(orderId);
+      clientOrder.status = 'annule';
+      
+      // Rembourser le client
+      const ancienSolde = client.credit || 0;
+      client.credit = ancienSolde + clientOrder.total;
+      
+      const transactionId = this.generateTransactionId();
+      client.walletTransactions.push({
+        transactionId,
+        type: 'remboursement',
+        amount: clientOrder.total,
+        date: new Date(),
+        description: `Remboursement commande ${orderId} refusée`,
+        ancienSolde: ancienSolde,
+        nouveauSolde: client.credit,
+        details: {
+          reason: reason,
+          orderId: orderId.toString()
+        }
+      });
+      
+      await client.save({ session });
+      await session.commitTransaction();
+
+      // 🔔 NOTIFICATION AU CLIENT
+      try {
+        await NotificationService.notifyClient(
+          client._id,
+          'order_rejected',
+          {
+            orderId: orderId.toString(),
+            orderNumber: `CMD-${orderId.toString().slice(-6)}`,
+            reason: reason,
+            amountRefunded: clientOrder.total
+          }
+        );
+        console.log("📨 [REJECT_ORDER] Notification de refus envoyée au client");
+      } catch (notificationError) {
+        console.error("❌ [REJECT_ORDER] Erreur envoi notification refus:", notificationError);
+      }
+
+      return { 
+        message: 'Commande refusée et client remboursé', 
+        clientOrder, 
+        distOrder,
+        refund: {
+          amount: clientOrder.total,
+          newBalance: client.credit
+        }
+      };
+
+    } catch (error) {
+      await session.abortTransaction();
+      console.error("❌ [REJECT_ORDER] Erreur:", error);
+      throw error;
+    } finally {
+      session.endSession();
+    }
   }
 
   /**
