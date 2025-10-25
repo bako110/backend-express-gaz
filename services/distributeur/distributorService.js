@@ -1,6 +1,6 @@
 const Distributor = require('../../models/distributeur');
 const Livreur = require('../../models/livreur');
-const NotificationService = require('../notificationService'); // Important: ajouter l'import
+const NotificationService = require('../notificationService');
 
 exports.findDistributorById = async (id) => {
   return await Distributor.findById(id)
@@ -20,73 +20,128 @@ exports.getOrdersByStatus = async (distributorId, status) => {
 };
 
 exports.assignDelivery = async (distributorId, orderId, driverId, driverName, driverPhone) => {
+  const session = await require('mongoose').startSession();
+  session.startTransaction();
+
   try {
-    // 1️⃣ Trouver le distributeur
-    const distributor = await Distributor.findById(distributorId).populate('user');
+    console.log("🚚 [ASSIGN_DELIVERY] Début assignation:", {
+      distributorId,
+      orderId,
+      driverId,
+      driverName
+    });
+
+    // 1️⃣ VÉRIFICATION DISTRIBUTEUR
+    const distributor = await Distributor.findById(distributorId).populate('user').session(session);
     if (!distributor) throw new Error("Distributeur non trouvé");
 
-    // 2️⃣ Trouver la commande dans ses orders
+    // 2️⃣ VÉRIFICATION COMMANDE
     const order = distributor.orders.id(orderId);
     if (!order) throw new Error("Commande non trouvée");
+    
+    // Vérifier si la commande n'est pas déjà en livraison
+    if (order.status === 'en_livraison') {
+      throw new Error("Cette commande est déjà en cours de livraison");
+    }
 
-    // 3️⃣ Trouver le livreur
-    const driver = await Livreur.findById(driverId).populate("user");
+    // 3️⃣ VÉRIFICATION LIVREUR
+    const driver = await Livreur.findById(driverId).populate("user").session(session);
     if (!driver) throw new Error(`Livreur non trouvé avec l'ID "${driverId}".`);
 
-    // 4️⃣ Trouver le client pour les notifications
+    // 🔍 VÉRIFICATION CRITIQUE : Éviter les doublons
+    const existingDelivery = driver.deliveryHistory.find(
+      d => d.orderId && d.orderId.toString() === orderId.toString()
+    );
+
+    if (existingDelivery) {
+      console.log("⚠️ [ASSIGN_DELIVERY] Commande déjà assignée à ce livreur:", {
+        orderId,
+        existingStatus: existingDelivery.status,
+        existingId: existingDelivery._id
+      });
+      
+      // Si la livraison existe mais est annulée, on peut la réactiver
+      if (existingDelivery.status === 'annule' || existingDelivery.status === 'termine') {
+        console.log("🔄 [ASSIGN_DELIVERY] Réactivation de la livraison existante");
+        existingDelivery.status = 'en_cours';
+        existingDelivery.scheduledAt = new Date();
+      } else {
+        throw new Error("Cette commande est déjà assignée à ce livreur");
+      }
+    }
+
+    // 4️⃣ VÉRIFICATION CLIENT
     const Client = require('../../models/client');
-    const client = await Client.findOne({ 'orders._id': orderId });
+    const client = await Client.findOne({ 'orders._id': orderId }).session(session);
     if (!client) throw new Error("Client non trouvé pour cette commande");
 
-    // 5️⃣ Créer l'objet de livraison pour le distributeur
-    const deliveryForDistributor = {
-      orderId: order._id,
-      clientName: order.clientName,
-      driverId: driver._id,
-      driverName: driverName || driver.user?.name || "Inconnu",
-      driverPhone: driverPhone || driver.user?.phone || "Non fourni",
-      status: "en_route",
-      delivery: "non", 
-      startTime: new Date(),
-      total: order.total,
-    };
-    distributor.deliveries.push(deliveryForDistributor);
+    const clientOrder = client.orders.id(orderId);
+    if (!clientOrder) throw new Error("Commande non trouvée chez le client");
 
-    // 6️⃣ Mettre à jour la commande côté distributeur
+    // 5️⃣ CRÉATION LIVRAISON DISTRIBUTEUR (uniquement si pas de doublon)
+    if (!existingDelivery) {
+      const deliveryForDistributor = {
+        orderId: order._id,
+        clientName: order.clientName,
+        driverId: driver._id,
+        driverName: driverName || driver.user?.name || "Inconnu",
+        driverPhone: driverPhone || driver.user?.phone || "Non fourni",
+        status: "en_route",
+        delivery: order.delivery || "non", 
+        startTime: new Date(),
+        total: order.total,
+        estimatedTime: "30min"
+      };
+      distributor.deliveries.push(deliveryForDistributor);
+    }
+
+    // 6️⃣ MISE À JOUR STATUT COMMANDE DISTRIBUTEUR
     order.status = "en_livraison";
-    order.delivery = "non";
+    order.livreurId = driver._id;
 
-    // 7️⃣ Ajouter dans l'historique du livreur (deliveryHistory)
-    const deliveryForDriver = {
-      orderId: order._id,
-      clientName: order.clientName,
-      clientPhone: order.clientPhone,
-      address: order.address,
-      status: "en_cours",
-      delivery: "non",
-      total: order.total,
-      deliveryFee: order.deliveryFee || 0,
-      deliveredAt: null,
-      scheduledAt: new Date(),
-      distance: order.distance,
-      estimatedTime: "30min",
-    };
+    // 7️⃣ AJOUT DANS L'HISTORIQUE LIVREUR (uniquement si pas de doublon)
+    if (!existingDelivery) {
+      const deliveryForDriver = {
+        orderId: order._id,
+        clientName: order.clientName,
+        clientPhone: order.clientPhone,
+        address: order.address,
+        status: "en_cours",
+        delivery: order.delivery || "non",
+        total: order.total,
+        deliveryFee: order.deliveryFee || 0,
+        deliveredAt: null,
+        scheduledAt: new Date(),
+        distance: order.distance || "0",
+        estimatedTime: "30min",
+        priority: order.priority || "normal"
+      };
 
-    driver.deliveryHistory.push(deliveryForDriver);
+      driver.deliveryHistory.push(deliveryForDriver);
+      console.log("✅ [ASSIGN_DELIVERY] Nouvelle livraison ajoutée à l'historique livreur");
+    }
 
-    // 8️⃣ Mettre le livreur comme "occupé"
+    // 8️⃣ MISE À JOUR STATUT LIVREUR
     driver.status = "occupé";
     if (!driver.zone) driver.zone = distributor.zone || "Zone par défaut";
 
-    // 9️⃣ Sauvegarder avant les notifications
-    await distributor.save();
-    await driver.save();
+    // 9️⃣ MISE À JOUR COMMANDE CLIENT
+    clientOrder.status = "en_livraison";
+    clientOrder.livreurId = driver._id;
 
-    // 🔔 🔔 🔔 NOTIFICATIONS - TOUS LES ACTEURS 🔔 🔔 🔔
+    // 💾 SAUVEGARDE TRANSACTION
+    await distributor.save({ session });
+    await driver.save({ session });
+    await client.save({ session });
+
+    await session.commitTransaction();
+    console.log("✅ [ASSIGN_DELIVERY] Transaction sauvegardée avec succès");
+
+    // 🔔 NOTIFICATIONS
     const notificationErrors = [];
 
     try {
-      // 1️⃣ NOTIFICATION AU LIVREUR
+      // NOTIFICATION LIVREUR
       await NotificationService.notifyLivreur(
         driverId,
         'new_delivery',
@@ -99,17 +154,18 @@ exports.assignDelivery = async (distributorId, orderId, driverId, driverName, dr
           amount: order.deliveryFee || 0,
           distance: order.distance,
           estimatedTime: "30min",
-          distributorName: distributor.user?.name || distributor.name || "Distributeur"
+          distributorName: distributor.user?.name || distributor.name || "Distributeur",
+          validationCode: clientOrder.validationCode // Important pour la livraison
         }
       );
-      console.log("📨 Notification de nouvelle livraison envoyée au livreur");
+      console.log("📨 [ASSIGN_DELIVERY] Notification envoyée au livreur");
     } catch (error) {
-      console.error("❌ Erreur notification livreur:", error);
+      console.error("❌ [ASSIGN_DELIVERY] Erreur notification livreur:", error);
       notificationErrors.push("Livreur");
     }
 
     try {
-      // 2️⃣ NOTIFICATION AU DISTRIBUTEUR
+      // NOTIFICATION DISTRIBUTEUR
       await NotificationService.notifyDistributor(
         distributorId,
         'driver_assigned',
@@ -122,14 +178,14 @@ exports.assignDelivery = async (distributorId, orderId, driverId, driverName, dr
           amount: order.deliveryFee || 0
         }
       );
-      console.log("📨 Notification d'assignation envoyée au distributeur");
+      console.log("📨 [ASSIGN_DELIVERY] Notification envoyée au distributeur");
     } catch (error) {
-      console.error("❌ Erreur notification distributeur:", error);
+      console.error("❌ [ASSIGN_DELIVERY] Erreur notification distributeur:", error);
       notificationErrors.push("Distributeur");
     }
 
     try {
-      // 3️⃣ NOTIFICATION AU CLIENT
+      // NOTIFICATION CLIENT
       await NotificationService.notifyClient(
         client._id,
         'driver_assigned',
@@ -140,24 +196,20 @@ exports.assignDelivery = async (distributorId, orderId, driverId, driverName, dr
           driverPhone: driverPhone || driver.user?.phone || "Non fourni",
           estimatedTime: "30min",
           total: order.total,
-          address: order.address
+          address: order.address,
+          validationCode: clientOrder.validationCode
         }
       );
-      console.log("📨 Notification d'assignation envoyée au client");
+      console.log("📨 [ASSIGN_DELIVERY] Notification envoyée au client");
     } catch (error) {
-      console.error("❌ Erreur notification client:", error);
+      console.error("❌ [ASSIGN_DELIVERY] Erreur notification client:", error);
       notificationErrors.push("Client");
     }
 
-    // Résumé des notifications
-    const notificationStatus = notificationErrors.length === 0 
-      ? "✅ Toutes les notifications envoyées"
-      : `⚠️ Notifications échouées: ${notificationErrors.join(", ")}`;
-
     return {
       success: true,
-      message: "✅ Livraison assignée avec succès",
-      notifications: notificationStatus,
+      message: existingDelivery ? "✅ Livraison réactivée avec succès" : "✅ Livraison assignée avec succès",
+      existingAssignment: !!existingDelivery,
       orderDetails: {
         orderId: order._id.toString(),
         orderNumber: `CMD-${orderId.toString().slice(-6)}`,
@@ -165,7 +217,8 @@ exports.assignDelivery = async (distributorId, orderId, driverId, driverName, dr
         clientPhone: order.clientPhone,
         address: order.address,
         total: order.total,
-        deliveryFee: order.deliveryFee || 0
+        deliveryFee: order.deliveryFee || 0,
+        validationCode: clientOrder.validationCode
       },
       driverDetails: {
         driverId: driver._id.toString(),
@@ -177,7 +230,48 @@ exports.assignDelivery = async (distributorId, orderId, driverId, driverName, dr
     };
 
   } catch (error) {
-    console.error("❌ Erreur lors de l'assignation de la livraison:", error.message);
-    throw new Error(`Erreur lors de l'assignation de la livraison: ${error.message}`);
+    await session.abortTransaction();
+    console.error("❌ [ASSIGN_DELIVERY] Erreur critique:", error.message);
+    throw new Error(`Erreur lors de l'assignation: ${error.message}`);
+  } finally {
+    session.endSession();
+  }
+};
+
+/**
+ * Nettoyer les doublons dans l'historique des livreurs
+ */
+exports.cleanDuplicateDeliveries = async (livreurId) => {
+  try {
+    const livreur = await Livreur.findById(livreurId);
+    if (!livreur) throw new Error("Livreur non trouvé");
+
+    const uniqueDeliveries = [];
+    const seenOrderIds = new Set();
+
+    // Parcourir en sens inverse pour garder les plus récentes
+    for (let i = livreur.deliveryHistory.length - 1; i >= 0; i--) {
+      const delivery = livreur.deliveryHistory[i];
+      const orderIdStr = delivery.orderId ? delivery.orderId.toString() : null;
+      
+      if (orderIdStr && !seenOrderIds.has(orderIdStr)) {
+        seenOrderIds.add(orderIdStr);
+        uniqueDeliveries.unshift(delivery); // Remettre dans l'ordre
+      } else {
+        console.log(`🗑️ Suppression doublon: orderId ${orderIdStr}`);
+      }
+    }
+
+    livreur.deliveryHistory = uniqueDeliveries;
+    await livreur.save();
+
+    return {
+      success: true,
+      message: `Nettoyage terminé: ${livreur.deliveryHistory.length} livraisons uniques`,
+      removed: livreur.deliveryHistory.length - uniqueDeliveries.length
+    };
+  } catch (error) {
+    console.error("❌ Erreur nettoyage doublons:", error);
+    throw error;
   }
 };
