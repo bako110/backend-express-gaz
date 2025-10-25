@@ -221,314 +221,338 @@ class CommandeService {
   }
 
   /**
-   * VALIDATION DE LIVRAISON AVEC CODE + GESTION COMPLÈTE DES PAIEMENTS
-   * Version corrigée - Vérifie d'abord chez le livreur
-   */
-  static async validateAndCompleteDelivery(orderId, enteredCode, livreurId) {
-    try {
-      console.log("=".repeat(80));
-      console.log("🔢 [VALIDATE_DELIVERY] DÉBUT VALIDATION - VERSION CORRIGÉE");
-      console.log("📦 Order ID:", orderId);
-      console.log("⌨️  Code reçu du frontend:", enteredCode);
-      console.log("🚚 Livreur ID:", livreurId);
-      console.log("=".repeat(80));
+ * VALIDATION DE LIVRAISON AVEC CODE + GESTION COMPLÈTE DES PAIEMENTS
+ * Version corrigée - Recherche le livreur par user ID
+ */
+static async validateAndCompleteDelivery(orderId, enteredCode, livreurUserId) {
+  try {
+    console.log("=".repeat(80));
+    console.log("🔢 [VALIDATE_DELIVERY] DÉBUT VALIDATION - VERSION CORRIGÉE");
+    console.log("📦 Order ID:", orderId);
+    console.log("⌨️  Code reçu du frontend:", enteredCode);
+    console.log("👤 Livreur User ID:", livreurUserId);
+    console.log("=".repeat(80));
 
-      // -------------------- 1️⃣ VÉRIFICATION DU CODE CHEZ LE CLIENT --------------------
-      console.log("🔍 [VALIDATE_DELIVERY] Recherche de la commande chez le client...");
-      const client = await Client.findOne({ "orders._id": orderId });
-      if (!client) {
-        console.log("❌ [VALIDATE_DELIVERY] Commande non trouvée chez le client");
-        throw new Error("Commande non trouvée");
-      }
+    // -------------------- 1️⃣ VÉRIFICATION DU CODE CHEZ LE CLIENT --------------------
+    console.log("🔍 [VALIDATE_DELIVERY] Recherche de la commande chez le client...");
+    const client = await Client.findOne({ "orders._id": orderId });
+    if (!client) {
+      console.log("❌ [VALIDATE_DELIVERY] Commande non trouvée chez le client");
+      throw new Error("Commande non trouvée");
+    }
 
-      const clientOrder = client.orders.id(orderId);
-      if (!clientOrder) {
-        console.log("❌ [VALIDATE_DELIVERY] Commande non trouvée dans les orders du client");
-        throw new Error("Commande non trouvée");
-      }
+    const clientOrder = client.orders.id(orderId);
+    if (!clientOrder) {
+      console.log("❌ [VALIDATE_DELIVERY] Commande non trouvée dans les orders du client");
+      throw new Error("Commande non trouvée");
+    }
 
-      console.log("✅ [VALIDATE_DELIVERY] Commande trouvée chez client:", {
-        orderId: orderId,
-        statut: clientOrder.status,
-        livreurAssigné: clientOrder.livreurId,
-        codeAttendu: clientOrder.validationCode
-      });
+    console.log("✅ [VALIDATE_DELIVERY] Commande trouvée chez client:", {
+      orderId: orderId,
+      statut: clientOrder.status,
+      livreurAssigné: clientOrder.livreurId,
+      codeAttendu: clientOrder.validationCode
+    });
 
-      // Vérifier le code de validation
-      console.log("🔐 [VALIDATE_DELIVERY] Vérification du code...");
-      console.log("   Code saisi:", enteredCode);
-      console.log("   Code attendu:", clientOrder.validationCode);
+    // Vérifier le code de validation
+    console.log("🔐 [VALIDATE_DELIVERY] Vérification du code...");
+    console.log("   Code saisi:", enteredCode);
+    console.log("   Code attendu:", clientOrder.validationCode);
 
-      if (clientOrder.validationCode !== enteredCode) {
-        console.log("❌ [VALIDATE_DELIVERY] CODE INCORRECT");
+    if (clientOrder.validationCode !== enteredCode) {
+      console.log("❌ [VALIDATE_DELIVERY] CODE INCORRECT");
+      return {
+        success: false,
+        message: "Code de validation incorrect",
+        codeValid: false,
+        details: {
+          codeSaisi: enteredCode,
+          codeAttendu: clientOrder.validationCode
+        }
+      };
+    }
+
+    console.log("✅ [VALIDATE_DELIVERY] CODE CORRECT - Validation réussie");
+
+    // -------------------- 2️⃣ VÉRIFICATION CHEZ LE LIVREUR --------------------
+    console.log("🚚 [VALIDATE_DELIVERY] Recherche du livreur par user ID...");
+    const livreur = await Livreur.findOne({ user: livreurUserId });
+    
+    if (!livreur) {
+      console.log("❌ [VALIDATE_DELIVERY] Livreur non trouvé avec user ID:", livreurUserId);
+      console.log("🔍 [VALIDATE_DELIVERY] Tentative de recherche par ID direct...");
+      
+      // Tentative de recherche par ID direct au cas où
+      const livreurDirect = await Livreur.findById(livreurUserId);
+      if (!livreurDirect) {
+        console.log("❌ [VALIDATE_DELIVERY] Livreur non trouvé avec ID direct non plus");
         return {
           success: false,
-          message: "Code de validation incorrect",
-          codeValid: false,
-          details: {
-            codeSaisi: enteredCode,
-            codeAttendu: clientOrder.validationCode
-          }
-        };
-      }
-
-      console.log("✅ [VALIDATE_DELIVERY] CODE CORRECT - Validation réussie");
-
-      // -------------------- 2️⃣ VÉRIFICATION CHEZ LE LIVREUR --------------------
-      console.log("🚚 [VALIDATE_DELIVERY] Vérification chez le livreur...");
-      const livreur = await Livreur.findById(livreurId);
-      if (!livreur) {
-        console.log("❌ [VALIDATE_DELIVERY] Livreur non trouvé");
-        throw new Error("Livreur non trouvé");
-      }
-
-      // Vérifier si le livreur a cette commande dans son historique
-      const livreurDelivery = livreur.deliveryHistory.find(
-        d => d.orderId.toString() === orderId.toString()
-      );
-
-      console.log("📋 [VALIDATE_DELIVERY] État du livreur:", {
-        livreurId: livreur._id.toString(),
-        statut: livreur.status,
-        commandeDansHistorique: !!livreurDelivery,
-        statutCommande: livreurDelivery?.status
-      });
-
-      if (!livreurDelivery) {
-        console.log("❌ [VALIDATE_DELIVERY] Commande non trouvée chez le livreur");
-        return {
-          success: false,
-          message: "Cette commande ne vous est pas assignée",
+          message: "Livreur non trouvé",
           codeValid: true,
           livreurValid: false,
           details: {
-            livreurId: livreurId,
+            livreurUserId: livreurUserId,
             orderId: orderId
           }
         };
       }
+      console.log("✅ [VALIDATE_DELIVERY] Livreur trouvé avec ID direct");
+    }
 
-      if (livreurDelivery.status !== 'en_cours') {
-        console.log("❌ [VALIDATE_DELIVERY] Commande déjà traitée - Statut:", livreurDelivery.status);
-        return {
-          success: false,
-          message: "Cette commande a déjà été traitée",
-          codeValid: true,
-          livreurValid: false,
-          details: {
-            statutActuel: livreurDelivery.status
-          }
-        };
-      }
+    const livreurTrouve = livreur || livreurDirect;
+    console.log("📋 [VALIDATE_DELIVERY] Livreur trouvé:", {
+      livreurId: livreurTrouve._id.toString(),
+      user: livreurTrouve.user.toString(),
+      statut: livreurTrouve.status
+    });
 
-      console.log("✅ [VALIDATE_DELIVERY] LIVREUR VALIDÉ - Le livreur a bien cette commande");
+    // Vérifier si le livreur a cette commande dans son historique
+    const livreurDelivery = livreurTrouve.deliveryHistory.find(
+      d => d.orderId && d.orderId.toString() === orderId.toString()
+    );
 
-      // -------------------- 3️⃣ CORRECTION DE L'ASSIGNATION SI NÉCESSAIRE --------------------
-      if (!clientOrder.livreurId || clientOrder.livreurId.toString() !== livreurId) {
-        console.log("🔄 [VALIDATE_DELIVERY] Correction de l'assignation livreur...");
-        console.log("   Ancien livreurId:", clientOrder.livreurId);
-        console.log("   Nouveau livreurId:", livreurId);
-        
-        clientOrder.livreurId = livreurId;
-        await client.save();
-        console.log("✅ [VALIDATE_DELIVERY] Assignation corrigée chez le client");
-      }
+    console.log("📋 [VALIDATE_DELIVERY] État du livreur:", {
+      livreurId: livreurTrouve._id.toString(),
+      statut: livreurTrouve.status,
+      commandeDansHistorique: !!livreurDelivery,
+      statutCommande: livreurDelivery?.status
+    });
 
-      const now = new Date();
-
-      // -------------------- 4️⃣ MISE À JOUR CLIENT --------------------
-      console.log("👤 [VALIDATE_DELIVERY] Mise à jour client...");
-      clientOrder.status = 'livre';
-      clientOrder.deliveredAt = now;
-
-      // Ajouter à l'historique du client
-      client.historiqueCommandes.push({
-        products: clientOrder.products,
-        productPrice: clientOrder.productPrice,
-        deliveryFee: clientOrder.deliveryFee,
-        total: clientOrder.total,
-        date: now,
-        status: 'livre',
-        clientName: clientOrder.clientName,
-        clientPhone: clientOrder.clientPhone,
-        distributorId: clientOrder.distributorId,
-        distributorName: clientOrder.distributorName,
-        livreurId: clientOrder.livreurId,
-        orderCode: clientOrder.validationCode
-      });
-
-      // Supprimer de la liste des commandes en cours
-      client.orders.pull(orderId);
-      await client.save();
-      console.log("✅ [VALIDATE_DELIVERY] Client mis à jour - Statut: livré");
-
-      // -------------------- 5️⃣ MISE À JOUR LIVREUR --------------------
-      console.log("🚚 [VALIDATE_DELIVERY] Mise à jour livreur...");
-      
-      const livreurAmount = clientOrder.deliveryFee || 0;
-      console.log("💰 [VALIDATE_DELIVERY] Montant livreur:", livreurAmount);
-
-      // Mettre à jour l'historique de livraison du livreur
-      livreurDelivery.status = 'livre';
-      livreurDelivery.deliveredAt = now;
-      livreurDelivery.amountReceived = livreurAmount;
-      console.log("✅ [VALIDATE_DELIVERY] Historique livreur mis à jour");
-
-      // Créditer le portefeuille du livreur
-      if (!livreur.wallet) livreur.wallet = { balance: 0, transactions: [] };
-
-      const ancienSolde = livreur.wallet.balance;
-      livreur.wallet.balance += livreurAmount;
-      livreur.wallet.transactions.push({
-        amount: livreurAmount,
-        type: 'credit',
-        description: `Frais de livraison commande ${orderId} - ${clientOrder.clientName}`,
-        date: now,
-        orderId: orderId
-      });
-
-      livreur.totalLivraisons = (livreur.totalLivraisons || 0) + 1;
-      livreur.totalRevenue = (livreur.totalRevenue || 0) + livreurAmount;
-
-      console.log("💰 [VALIDATE_DELIVERY] Portefeuille livreur:", {
-        ancienSolde: ancienSolde,
-        montantAjouté: livreurAmount,
-        nouveauSolde: livreur.wallet.balance
-      });
-
-      // Mettre à jour les livraisons du jour
-      if (Array.isArray(livreur.todaysDeliveries)) {
-        livreur.todaysDeliveries = livreur.todaysDeliveries.filter(
-          d => d.orderId.toString() !== orderId.toString()
-        );
-
-        if (livreur.todaysDeliveries.length === 0) {
-          livreur.status = 'disponible';
-          console.log("🔄 [VALIDATE_DELIVERY] Livreur marqué comme disponible");
-        }
-      }
-
-      await livreur.save();
-      console.log("✅ [VALIDATE_DELIVERY] Livreur mis à jour");
-
-      // -------------------- 6️⃣ MISE À JOUR DISTRIBUTEUR --------------------
-      console.log("🏪 [VALIDATE_DELIVERY] Mise à jour distributeur...");
-      const distributor = await Distributor.findOne({ 'orders._id': orderId });
-      if (!distributor) {
-        console.log("❌ [VALIDATE_DELIVERY] Distributeur non trouvé");
-        throw new Error("Distributeur non trouvé pour cette commande");
-      }
-
-      const distributorOrder = distributor.orders.id(orderId);
-      if (!distributorOrder) {
-        console.log("❌ [VALIDATE_DELIVERY] Commande non trouvée chez le distributeur");
-        throw new Error("Commande non trouvée dans les commandes du distributeur");
-      }
-
-      distributorOrder.status = 'livre';
-      distributorOrder.deliveredAt = now;
-      distributorOrder.livreurId = livreurId; // S'assurer que le livreur est assigné
-
-      const distributorAmount = distributorOrder.productPrice || 0;
-      console.log("💰 [VALIDATE_DELIVERY] Montant distributeur:", distributorAmount);
-
-      // Créditer le distributeur
-      const ancienRevenue = distributor.revenue || 0;
-      const ancienBalance = distributor.balance || 0;
-      
-      distributor.revenue = ancienRevenue + distributorAmount;
-      distributor.balance = ancienBalance + distributorAmount;
-
-      // Ajouter transaction distributeur
-      const transactionId = `TX-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-      distributor.transactions.push({
-        transactionId,
-        type: 'vente',
-        amount: distributorAmount,
-        date: now,
-        description: `Paiement reçu pour la commande ${orderId} - Client: ${clientOrder.clientName}`,
-        relatedOrder: orderId,
-        method: 'cash',
-        status: 'terminee',
-        details: {
-          productAmount: distributorOrder.productPrice,
-          deliveryFee: distributorOrder.deliveryFee,
-          totalOrder: distributorOrder.total
-        }
-      });
-
-      await distributor.save();
-      console.log("✅ [VALIDATE_DELIVERY] Distributeur mis à jour:", {
-        ancienRevenue: ancienRevenue,
-        nouveauRevenue: distributor.revenue,
-        ancienBalance: ancienBalance,
-        nouveauBalance: distributor.balance
-      });
-
-      // -------------------- 7️⃣ NOTIFICATIONS --------------------
-      console.log("📨 [VALIDATE_DELIVERY] Envoi des notifications...");
-      try {
-        await NotificationService.notifyDeliveryCompleted(
-          orderId,
-          clientOrder.clientName,
-          livreurAmount,
-          distributorAmount
-        );
-
-        console.log("💰 [VALIDATE_DELIVERY] Notifications envoyées:");
-        console.log("   📦 Distributeur:", distributorAmount.toLocaleString(), "FCFA");
-        console.log("   🚚 Livreur:", livreurAmount.toLocaleString(), "FCFA");
-
-      } catch (notificationError) {
-        console.error("❌ [VALIDATE_DELIVERY] Erreur envoi notifications:", notificationError);
-      }
-
-      // -------------------- ✅ RÉSULTAT FINAL --------------------
-      console.log("=".repeat(80));
-      console.log("🎉 [VALIDATE_DELIVERY] VALIDATION TERMINÉE AVEC SUCCÈS");
-      console.log("📦 Commande:", orderId);
-      console.log("👤 Client:", clientOrder.clientName);
-      console.log("🚚 Livreur:", livreurId);
-      console.log("💰 Montants - Livreur:", livreurAmount, "Distributeur:", distributorAmount);
-      console.log("=".repeat(80));
-
+    if (!livreurDelivery) {
+      console.log("❌ [VALIDATE_DELIVERY] Commande non trouvée chez le livreur");
       return {
-        success: true,
-        message: "✅ Livraison validée avec succès - Paiements distribués",
+        success: false,
+        message: "Cette commande ne vous est pas assignée",
         codeValid: true,
-        livreurValid: true,
+        livreurValid: false,
         details: {
-          client: {
-            orderId: orderId.toString(),
-            status: 'livre',
-            totalPaid: clientOrder.total
-          },
-          livreur: {
-            amountReceived: livreurAmount,
-            newBalance: livreur.wallet.balance,
-            ancienBalance: ancienSolde
-          },
-          distributor: {
-            amountReceived: distributorAmount,
-            newBalance: distributor.balance,
-            ancienBalance: ancienBalance,
-            transactionId: transactionId
-          }
-        },
-        amounts: {
-          totalOrder: clientOrder.total,
-          productAmount: distributorAmount,
-          deliveryFee: livreurAmount
+          livreurId: livreurTrouve._id.toString(),
+          orderId: orderId
         }
       };
-
-    } catch (error) {
-      console.error("❌ [VALIDATE_DELIVERY] ERREUR CRITIQUE:", error);
-      console.error("Stack trace:", error.stack);
-      throw error;
     }
-  }
 
+    if (livreurDelivery.status !== 'en_cours') {
+      console.log("❌ [VALIDATE_DELIVERY] Commande déjà traitée - Statut:", livreurDelivery.status);
+      return {
+        success: false,
+        message: "Cette commande a déjà été traitée",
+        codeValid: true,
+        livreurValid: false,
+        details: {
+          statutActuel: livreurDelivery.status
+        }
+      };
+    }
+
+    console.log("✅ [VALIDATE_DELIVERY] LIVREUR VALIDÉ - Le livreur a bien cette commande");
+
+    // -------------------- 3️⃣ CORRECTION DE L'ASSIGNATION SI NÉCESSAIRE --------------------
+    if (!clientOrder.livreurId || clientOrder.livreurId.toString() !== livreurTrouve._id.toString()) {
+      console.log("🔄 [VALIDATE_DELIVERY] Correction de l'assignation livreur...");
+      console.log("   Ancien livreurId:", clientOrder.livreurId);
+      console.log("   Nouveau livreurId:", livreurTrouve._id.toString());
+      
+      clientOrder.livreurId = livreurTrouve._id;
+      await client.save();
+      console.log("✅ [VALIDATE_DELIVERY] Assignation corrigée chez le client");
+    }
+
+    const now = new Date();
+
+    // -------------------- 4️⃣ MISE À JOUR CLIENT --------------------
+    console.log("👤 [VALIDATE_DELIVERY] Mise à jour client...");
+    clientOrder.status = 'livre';
+    clientOrder.deliveredAt = now;
+
+    // Ajouter à l'historique du client
+    client.historiqueCommandes.push({
+      products: clientOrder.products,
+      productPrice: clientOrder.productPrice,
+      deliveryFee: clientOrder.deliveryFee,
+      total: clientOrder.total,
+      date: now,
+      status: 'livre',
+      clientName: clientOrder.clientName,
+      clientPhone: clientOrder.clientPhone,
+      distributorId: clientOrder.distributorId,
+      distributorName: clientOrder.distributorName,
+      livreurId: clientOrder.livreurId,
+      orderCode: clientOrder.validationCode
+    });
+
+    // Supprimer de la liste des commandes en cours
+    client.orders.pull(orderId);
+    await client.save();
+    console.log("✅ [VALIDATE_DELIVERY] Client mis à jour - Statut: livré");
+
+    // -------------------- 5️⃣ MISE À JOUR LIVREUR --------------------
+    console.log("🚚 [VALIDATE_DELIVERY] Mise à jour livreur...");
+    
+    const livreurAmount = clientOrder.deliveryFee || 0;
+    console.log("💰 [VALIDATE_DELIVERY] Montant livreur:", livreurAmount);
+
+    // Mettre à jour l'historique de livraison du livreur
+    livreurDelivery.status = 'livre';
+    livreurDelivery.deliveredAt = now;
+    livreurDelivery.amountReceived = livreurAmount;
+    console.log("✅ [VALIDATE_DELIVERY] Historique livreur mis à jour");
+
+    // Créditer le portefeuille du livreur
+    if (!livreurTrouve.wallet) livreurTrouve.wallet = { balance: 0, transactions: [] };
+
+    const ancienSolde = livreurTrouve.wallet.balance;
+    livreurTrouve.wallet.balance += livreurAmount;
+    livreurTrouve.wallet.transactions.push({
+      amount: livreurAmount,
+      type: 'credit',
+      description: `Frais de livraison commande ${orderId} - ${clientOrder.clientName}`,
+      date: now,
+      orderId: orderId
+    });
+
+    livreurTrouve.totalLivraisons = (livreurTrouve.totalLivraisons || 0) + 1;
+    livreurTrouve.totalRevenue = (livreurTrouve.totalRevenue || 0) + livreurAmount;
+
+    console.log("💰 [VALIDATE_DELIVERY] Portefeuille livreur:", {
+      ancienSolde: ancienSolde,
+      montantAjouté: livreurAmount,
+      nouveauSolde: livreurTrouve.wallet.balance
+    });
+
+    // Mettre à jour les livraisons du jour
+    if (Array.isArray(livreurTrouve.todaysDeliveries)) {
+      livreurTrouve.todaysDeliveries = livreurTrouve.todaysDeliveries.filter(
+        d => d.orderId && d.orderId.toString() !== orderId.toString()
+      );
+
+      if (livreurTrouve.todaysDeliveries.length === 0) {
+        livreurTrouve.status = 'disponible';
+        console.log("🔄 [VALIDATE_DELIVERY] Livreur marqué comme disponible");
+      }
+    }
+
+    await livreurTrouve.save();
+    console.log("✅ [VALIDATE_DELIVERY] Livreur mis à jour");
+
+    // -------------------- 6️⃣ MISE À JOUR DISTRIBUTEUR --------------------
+    console.log("🏪 [VALIDATE_DELIVERY] Mise à jour distributeur...");
+    const distributor = await Distributor.findOne({ 'orders._id': orderId });
+    if (!distributor) {
+      console.log("❌ [VALIDATE_DELIVERY] Distributeur non trouvé");
+      throw new Error("Distributeur non trouvé pour cette commande");
+    }
+
+    const distributorOrder = distributor.orders.id(orderId);
+    if (!distributorOrder) {
+      console.log("❌ [VALIDATE_DELIVERY] Commande non trouvée chez le distributeur");
+      throw new Error("Commande non trouvée dans les commandes du distributeur");
+    }
+
+    distributorOrder.status = 'livre';
+    distributorOrder.deliveredAt = now;
+    distributorOrder.livreurId = livreurTrouve._id; // S'assurer que le livreur est assigné
+
+    const distributorAmount = distributorOrder.productPrice || 0;
+    console.log("💰 [VALIDATE_DELIVERY] Montant distributeur:", distributorAmount);
+
+    // Créditer le distributeur
+    const ancienRevenue = distributor.revenue || 0;
+    const ancienBalance = distributor.balance || 0;
+    
+    distributor.revenue = ancienRevenue + distributorAmount;
+    distributor.balance = ancienBalance + distributorAmount;
+
+    // Ajouter transaction distributeur
+    const transactionId = `TX-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    distributor.transactions.push({
+      transactionId,
+      type: 'vente',
+      amount: distributorAmount,
+      date: now,
+      description: `Paiement reçu pour la commande ${orderId} - Client: ${clientOrder.clientName}`,
+      relatedOrder: orderId,
+      method: 'cash',
+      status: 'terminee',
+      details: {
+        productAmount: distributorOrder.productPrice,
+        deliveryFee: distributorOrder.deliveryFee,
+        totalOrder: distributorOrder.total
+      }
+    });
+
+    await distributor.save();
+    console.log("✅ [VALIDATE_DELIVERY] Distributeur mis à jour:", {
+      ancienRevenue: ancienRevenue,
+      nouveauRevenue: distributor.revenue,
+      ancienBalance: ancienBalance,
+      nouveauBalance: distributor.balance
+    });
+
+    // -------------------- 7️⃣ NOTIFICATIONS --------------------
+    console.log("📨 [VALIDATE_DELIVERY] Envoi des notifications...");
+    try {
+      await NotificationService.notifyDeliveryCompleted(
+        orderId,
+        clientOrder.clientName,
+        livreurAmount,
+        distributorAmount
+      );
+
+      console.log("💰 [VALIDATE_DELIVERY] Notifications envoyées:");
+      console.log("   📦 Distributeur:", distributorAmount.toLocaleString(), "FCFA");
+      console.log("   🚚 Livreur:", livreurAmount.toLocaleString(), "FCFA");
+
+    } catch (notificationError) {
+      console.error("❌ [VALIDATE_DELIVERY] Erreur envoi notifications:", notificationError);
+    }
+
+    // -------------------- ✅ RÉSULTAT FINAL --------------------
+    console.log("=".repeat(80));
+    console.log("🎉 [VALIDATE_DELIVERY] VALIDATION TERMINÉE AVEC SUCCÈS");
+    console.log("📦 Commande:", orderId);
+    console.log("👤 Client:", clientOrder.clientName);
+    console.log("🚚 Livreur:", livreurTrouve._id.toString());
+    console.log("💰 Montants - Livreur:", livreurAmount, "Distributeur:", distributorAmount);
+    console.log("=".repeat(80));
+
+    return {
+      success: true,
+      message: "✅ Livraison validée avec succès - Paiements distribués",
+      codeValid: true,
+      livreurValid: true,
+      details: {
+        client: {
+          orderId: orderId.toString(),
+          status: 'livre',
+          totalPaid: clientOrder.total
+        },
+        livreur: {
+          amountReceived: livreurAmount,
+          newBalance: livreurTrouve.wallet.balance,
+          ancienBalance: ancienSolde
+        },
+        distributor: {
+          amountReceived: distributorAmount,
+          newBalance: distributor.balance,
+          ancienBalance: ancienBalance,
+          transactionId: transactionId
+        }
+      },
+      amounts: {
+        totalOrder: clientOrder.total,
+        productAmount: distributorAmount,
+        deliveryFee: livreurAmount
+      }
+    };
+
+  } catch (error) {
+    console.error("❌ [VALIDATE_DELIVERY] ERREUR CRITIQUE:", error);
+    console.error("Stack trace:", error.stack);
+    throw error;
+  }
+}
   /**
    * Assignation du livreur via un service séparé.
    */
