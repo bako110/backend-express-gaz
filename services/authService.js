@@ -82,8 +82,7 @@ static async registerUser({ name, phone, pin, userType, address, zone, neighborh
             vehicleType: 'Moto',
             status: 'disponible',
             totalLivraisons: 0,
-            currentDeliveries: [],
-            deliveryHistory: []
+            deliveries: []  // ✅ Nouvel array unifié
           }
         },
         { new: true, upsert: true }

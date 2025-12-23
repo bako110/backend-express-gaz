@@ -26,7 +26,7 @@ class CommandeController {
   static async validateDelivery(req, res) {
     try {
       console.log("=".repeat(60));
-      console.log("🎯 [CONTROLLER] REQUÊTE DE VALIDATION REÇUE");
+      console.log("🎯 [CONTROLLER] REQUÊTE DE VALIDATION LIVRAISON");
       console.log("📍 URL:", req.originalUrl);
       console.log("🔧 Méthode:", req.method);
       console.log("📦 Order ID param:", req.params.orderId);
@@ -35,6 +35,15 @@ class CommandeController {
 
       const { orderId } = req.params;
       const { validationCode, livreurId } = req.body;
+
+      // Validation du format OrderId
+      if (!orderId || orderId.length !== 24) {
+        console.log("❌ [CONTROLLER] OrderId invalide:", orderId);
+        return res.status(400).json({
+          success: false,
+          message: "ID de commande invalide"
+        });
+      }
 
       // Validation des données requises
       if (!validationCode) {
@@ -78,12 +87,12 @@ class CommandeController {
 
       // Réponse selon le résultat
       if (result.success) {
-        console.log("🎉 [CONTROLLER] VALIDATION RÉUSSIE - Envoi réponse 200");
+        console.log("🎉 [CONTROLLER] VALIDATION LIVRAISON RÉUSSIE - Envoi réponse 200");
         return res.status(200).json({
           success: true,
           message: result.message,
-          data: result.details,
-          amounts: result.amounts
+          type: result.type,
+          financial: result.financial
         });
       } else {
         console.log("⚠️ [CONTROLLER] VALIDATION ÉCHOUÉE - Envoi réponse 400");
@@ -91,18 +100,110 @@ class CommandeController {
           success: false,
           message: result.message,
           codeValid: result.codeValid,
-          livreurValid: result.livreurValid,
-          details: result.details
+          livreurValid: result.livreurValid
         });
       }
 
     } catch (error) {
-      console.error('💥 [CONTROLLER] ERREUR CRITIQUE:', error);
-      console.error('Stack trace:', error.stack);
-      return res.status(500).json({
+      console.error('💥 [CONTROLLER] ERREUR CRITIQUE LIVRAISON:', error);
+      res.status(500).json({
         success: false,
-        message: "Erreur interne du serveur",
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Erreur de traitement'
+        message: "Erreur lors de la validation de la livraison",
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * Valide un retrait sur place avec le code
+   * POST /api/commande/:orderId/complete-pickup
+   */
+  static async completePickup(req, res) {
+    try {
+      console.log("=".repeat(60));
+      console.log("🏪 [CONTROLLER] REQUÊTE COMPLETION RETRAIT SUR PLACE");
+      console.log("📍 URL:", req.originalUrl);
+      console.log("🔧 Méthode:", req.method);
+      console.log("📦 Order ID param:", req.params.orderId);
+      console.log("📝 Body reçu:", JSON.stringify(req.body, null, 2));
+      console.log("=".repeat(60));
+
+      const { orderId } = req.params;
+      const { validationCode, distributorId } = req.body;
+
+      // Validation du format OrderId
+      if (!orderId || orderId.length !== 24) {
+        console.log("❌ [CONTROLLER] OrderId invalide:", orderId);
+        return res.status(400).json({
+          success: false,
+          message: "ID de commande invalide"
+        });
+      }
+
+      // Validation des données requises
+      if (!validationCode) {
+        console.log("❌ [CONTROLLER] Code de validation manquant");
+        return res.status(400).json({
+          success: false,
+          message: "Le code de validation est requis"
+        });
+      }
+
+      if (!distributorId) {
+        console.log("❌ [CONTROLLER] ID distributeur manquant");
+        return res.status(400).json({
+          success: false,
+          message: "L'ID du distributeur est requis"
+        });
+      }
+
+      if (validationCode.length !== 6) {
+        console.log("❌ [CONTROLLER] Code invalide - longueur:", validationCode.length);
+        return res.status(400).json({
+          success: false,
+          message: "Le code doit contenir exactement 6 chiffres"
+        });
+      }
+
+      console.log("🔍 [CONTROLLER] Données validées - Appel du service...");
+
+      // Appel du service de complétion retrait
+      const result = await CommandeService.completePickup(
+        orderId, 
+        validationCode, 
+        distributorId
+      );
+
+      console.log("📨 [CONTROLLER] Réponse du service:", {
+        success: result.success,
+        codeValid: result.codeValid,
+        type: result.type
+      });
+
+      // Réponse selon le résultat
+      if (result.success) {
+        console.log("🎉 [CONTROLLER] RETRAIT COMPLÉTÉ AVEC SUCCÈS - Envoi réponse 200");
+        return res.status(200).json({
+          success: true,
+          message: result.message,
+          type: result.type,
+          financial: result.financial
+        });
+      } else {
+        console.log("⚠️ [CONTROLLER] VALIDATION ÉCHOUÉE - Envoi réponse 400");
+        return res.status(400).json({
+          success: false,
+          message: result.message,
+          codeValid: result.codeValid
+        });
+      }
+
+    } catch (error) {
+      console.error('💥 [CONTROLLER] ERREUR CRITIQUE RETRAIT:', error);
+      res.status(500).json({
+        success: false,
+        message: "Erreur lors de la complétion du retrait sur place",
+        error: error.message
       });
     }
   }
@@ -123,6 +224,12 @@ class CommandeController {
       }
 
       const result = await CommandeService.confirmOrder(orderId, distributorId, status);
+      
+      // Si la commande est déjà traitée, on retourne un succès quand même (idempotent)
+      if (result.alreadyProcessed) {
+        return res.status(200).json({ success: true, data: result, message: "Commande déjà confirmée/livrée" });
+      }
+      
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       console.error('Erreur lors de la confirmation de la commande :', error);

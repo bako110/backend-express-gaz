@@ -202,8 +202,11 @@ const notificationController = {
   markAsRead: async (req, res) => {
     try {
       const { notificationId } = req.params;
+      
+      console.log("🔔 Tentative de marquer la notification comme lue:", notificationId);
 
       if (!notificationId) {
+        console.log("❌ Notification ID manquant");
         return res.status(400).json({
           success: false,
           error: "Notification ID est requis"
@@ -213,23 +216,37 @@ const notificationController = {
       const notification = await NotificationService.markAsRead(notificationId);
 
       if (!notification) {
+        console.log("❌ Notification non trouvée pour l'ID:", notificationId);
         return res.status(404).json({
           success: false,
           error: "Notification non trouvée"
         });
       }
 
+      console.log("✅ Notification marquée comme lue:", notification._id, "read:", notification.read);
+
       res.json({
         success: true,
         message: "Notification marquée comme lue",
-        notification
+        notification: {
+          _id: notification._id,
+          id: notification._id,
+          read: notification.read,
+          title: notification.title,
+          message: notification.message,
+          type: notification.type,
+          category: notification.category,
+          createdAt: notification.createdAt,
+          priority: notification.priority
+        }
       });
 
     } catch (error) {
       console.error("❌ Erreur marquage notification comme lue:", error);
       res.status(500).json({
         success: false,
-        error: "Erreur lors du marquage de la notification"
+        error: "Erreur lors du marquage de la notification",
+        details: error.message
       });
     }
   },

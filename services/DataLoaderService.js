@@ -157,36 +157,21 @@ class AdminDataService {
       // Récupérer les commandes des livreurs
       const livreurs = await Livreur.find()
         .populate('user', 'name email phone')
-        .populate('todaysDeliveries.orderId')
-        .populate('deliveryHistory.orderId');
+        .populate('deliveries.orderId');
 
       for (let livreur of livreurs) {
-        // Livraisons du jour
-        if (livreur.todaysDeliveries && livreur.todaysDeliveries.length > 0) {
-          const todayOrders = livreur.todaysDeliveries.map(delivery => ({
+        // ✅ Utiliser le nouvel array unifié
+        if (livreur.deliveries && livreur.deliveries.length > 0) {
+          const livreurOrders = livreur.deliveries.map(delivery => ({
             ...delivery.toObject(),
             livreurId: livreur.user._id,
             livreurName: livreur.user.name,
             livreurEmail: livreur.user.email,
             livreurPhone: livreur.user.phone,
-            type: 'today',
+            type: 'delivery',
             userType: 'livreur'
           }));
-          allOrders = [...allOrders, ...todayOrders];
-        }
-
-        // Historique des livraisons
-        if (livreur.deliveryHistory && livreur.deliveryHistory.length > 0) {
-          const historyDeliveries = livreur.deliveryHistory.map(delivery => ({
-            ...delivery.toObject(),
-            livreurId: livreur.user._id,
-            livreurName: livreur.user.name,
-            livreurEmail: livreur.user.email,
-            livreurPhone: livreur.user.phone,
-            type: 'history',
-            userType: 'livreur'
-          }));
-          allOrders = [...allOrders, ...historyDeliveries];
+          allOrders = [...allOrders, ...livreurOrders];
         }
       }
 

@@ -1,9 +1,7 @@
-const express = require('express');
-const router = express.Router();
-const CommandeController = require('../controllers/qrcodeController');
-const authMiddleware = require('../middlewares/auth'); // middleware pour sécuriser l'accès
+// Redirect module - DEDUPLICATION
+// This file is maintained for backward compatibility only
+// Use the new organized structure in routes/orderRoutes.js
 
-// Récupérer QR code pour une commande
-router.get('/:orderId/validation-code', authMiddleware, CommandeController.getValidationCode);
+const orderRoutes = require('./orderRoutes');
 
-module.exports = router;
+module.exports = orderRoutes;

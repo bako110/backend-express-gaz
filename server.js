@@ -57,6 +57,19 @@ app.use('/api/users', userRoutes);
 // app.use('/api/transactions', transactionRoutes);
 // app.use('/api/admin/orders', orderAdminRoutes);
 
+console.log('✅ Toutes les routes API montées');
+console.log('   - /api/auth');
+console.log('   - /api/distributeurs');
+console.log('   - /api/distributors');
+console.log('   - /api/orders (validation des codes)');
+console.log('   - /api/livreur');
+console.log('   - /api/wallet');
+console.log('   - /api/location');
+console.log('   - /api/delivery-info');
+console.log('   - /api/notifications');
+console.log('   - /api/commande');
+console.log('   - /api/users');
+
 
 // ==============================
 //      Route test

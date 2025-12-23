@@ -57,7 +57,9 @@ const clientSchema = new mongoose.Schema({
       deliveredAt: { type: Date },                       // Date de livraison effective
 
       // ------------------- Code de validation numérique -------------------
-      validationCode: { type: String, required: true }   // 🔢 Code à 6 chiffres pour validation
+      validationCode: { type: String, required: true },   // 🔢 Code à 6 chiffres pour validation
+      // ✅ PETITE SECTION SIMPLE - Livraison ou Retrait
+      isDelivery: { type: Boolean, default: false } // true = à livrer, false = retrait sur place
     }
   ],
 

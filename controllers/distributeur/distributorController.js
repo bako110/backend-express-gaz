@@ -48,7 +48,7 @@ exports.getOrders = async (req, res) => {
 
 exports.assignDelivery = async (req, res) => {
   try {
-    const { distributorId, orderId, driverId, driverName, driverPhone } = req.body;
+    const { distributorId, orderId, driverId, driverName, driverPhone, clientName, total, startTime, status } = req.body;
 
     // Vérification des données obligatoires
     if (!distributorId || !orderId || !driverId) {
@@ -58,20 +58,45 @@ exports.assignDelivery = async (req, res) => {
       });
     }
 
-    // Appel du service
-    const { distributorDelivery, driverDelivery } =
-      await DistributorService.assignDelivery(distributorId, orderId, driverId, driverName, driverPhone);
+    console.log("📌 [CONTROLLER ASSIGN] Données reçues du frontend:", {
+      distributorId,
+      orderId,
+      driverId,
+      clientName,
+      status,
+      startTime
+    });
 
-    // Réponse avec les 2 enregistrements
-    res.status(201).json({
-      success: true,
-      message: "Livraison assignée avec succès.",
+    // Appel du service - retour de l'objet complet
+    // Passer aussi clientName et total au service
+    const result = await DistributorService.assignDelivery(
+      distributorId, 
+      orderId, 
+      driverId, 
+      driverName || "Non fourni", 
+      driverPhone || "Non fourni",
+      clientName,  // 🆕
+      total        // 🆕
+    );
+
+    console.log("✅ [CONTROLLER ASSIGN] Réponse service reçue:", {
+      success: result.success,
+      existingAssignment: result.existingAssignment
+    });
+
+    // Réponse cohérente avec le service
+    res.status(result.existingAssignment ? 200 : 201).json({
+      success: result.success,
+      message: result.message,
+      alreadyAssigned: result.existingAssignment,
       data: {
-        distributorDelivery,
-        driverDelivery
-      }
+        orderDetails: result.orderDetails,
+        driverDetails: result.driverDetails
+      },
+      notificationErrors: result.notificationErrors
     });
   } catch (error) {
+    console.error("❌ [CONTROLLER ASSIGN] Erreur:", error.message);
     res.status(500).json({
       success: false,
       error: error.message

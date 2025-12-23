@@ -24,28 +24,34 @@ const distributorSchema = new mongoose.Schema({
   ],
 
   // ------------------- Orders -------------------
-  orders: [
-    {
-      clientName: { type: String, required: true },
-      clientPhone: { type: String, required: true },
-      address: { type: String, required: true },
-      products: [
-        {
-          name: { type: String, required: true },
-          type: { type: String, required: true },
-          quantity: { type: Number, required: true },
-          price: { type: Number, required: true },
-        }
-      ],
-      total: { type: Number, required: true },
-      orderTime: { type: Date, default: Date.now },
-      priority: { type: String, enum: ['normal', 'high', 'urgent'], default: 'normal' },
-      status: { type: String, enum: ['nouveau', 'confirme', 'en_livraison', 'livre', 'annule'], default: 'nouveau' },
-      delivery: { type: String, enum: ['oui', 'non'], default: 'non' },
-      deliveryFee: { type: Number, default: 0 },
-      distance: { type: Number, default: 0 }
-    }
-  ],
+  // ------------------- Orders -------------------
+orders: [
+  {
+    clientName: { type: String, required: true },
+    clientPhone: { type: String, required: true },
+    address: { type: String, required: true },
+    products: [
+      {
+        name: { type: String, required: true },
+        type: { type: String, required: true },
+        quantity: { type: Number, required: true },
+        price: { type: Number, required: true },
+      }
+    ],
+    productPrice: { type: Number }, // 💰 Montant total du/des produit(s)
+    total: { type: Number, required: true },
+    orderTime: { type: Date, default: Date.now },
+    priority: { type: String, enum: ['normal', 'high', 'urgent'], default: 'normal' },
+    status: { type: String, enum: ['nouveau', 'confirme', 'en_livraison', 'livre', 'annule'], default: 'nouveau' },
+    delivery: { type: String, enum: ['oui', 'non'], default: 'non' },
+    deliveryFee: { type: Number, default: 0 },
+    distance: { type: Number, default: 0 },
+    validationCode: { type: String }, // 🔢 Code de validation pour retrait/livraison
+    
+    // ✅ PETITE SECTION SIMPLE - Livraison ou Retrait
+    isDelivery: { type: Boolean, default: false } // true = à livrer, false = retrait sur place
+  }
+],
 
   // ------------------- Deliveries -------------------
   deliveries: [

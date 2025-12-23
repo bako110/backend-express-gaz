@@ -1,26 +1,50 @@
-const CommandeService = require('../services/qrcodeService');
+const CommandeService = require('../services/orderService');
 
 class CommandeController {
 
   /**
    * Endpoint pour récupérer le code de validation d'une commande
-   * GET /api/commande/:orderId/validation-code
+   * GET /api/orders/:orderId/validation-code
+   * GET /api/orders/validation-code/:orderId
    */
   static async getValidationCode(req, res) {
-    const userId = req.user._id; // Assurez-vous que le middleware auth ajoute req.user
-    const { orderId } = req.params;
-
     try {
-      const validationCode = await CommandeService.getValidationCodeFromHistory(userId, orderId);
+      const { orderId } = req.params;
 
-      if (!validationCode) {
-        return res.status(404).json({ success: false, message: "Code de validation non trouvé pour cette commande." });
+      console.log("🔐 [QRCODE_CONTROLLER] Récupération code de validation pour:", orderId);
+
+      if (!orderId) {
+        console.log("❌ [QRCODE_CONTROLLER] Order ID manquant");
+        return res.status(400).json({ 
+          success: false, 
+          message: "Order ID manquant" 
+        });
       }
 
-      res.json({ success: true, validationCode });
+      // Utiliser la méthode du service orderService
+      const result = await CommandeService.getValidationCode(orderId);
+
+      if (!result.success) {
+        console.log("❌ [QRCODE_CONTROLLER] Code non trouvé");
+        return res.status(404).json({ 
+          success: false, 
+          message: result.message || "Code de validation non trouvé" 
+        });
+      }
+
+      console.log("✅ [QRCODE_CONTROLLER] Code trouvé et envoyé");
+      res.json({ 
+        success: true, 
+        validationCode: result.validationCode,
+        orderId: result.orderId
+      });
     } catch (err) {
-      console.error("Erreur récupération code de validation :", err);
-      res.status(500).json({ success: false, message: err.message });
+      console.error("❌ [QRCODE_CONTROLLER] Erreur récupération code de validation :", err);
+      res.status(500).json({ 
+        success: false, 
+        message: "Erreur lors de la récupération du code de validation",
+        error: err.message 
+      });
     }
   }
 }

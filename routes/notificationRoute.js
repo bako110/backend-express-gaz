@@ -3,6 +3,25 @@ const router = express.Router();
 const notificationController = require('../controllers/notificationController');
 const authMiddleware = require('../middlewares/auth'); // ton middleware auth corrigé
 
+// 🔔 ACTIONS SUR LES NOTIFICATIONS (Routes spécifiques d'abord)
+router.put(
+  '/:notificationId/read',
+  authMiddleware,
+  notificationController.markAsRead
+);
+
+router.put(
+  '/user/:userId/read-all',
+  
+  notificationController.markAllAsRead
+);
+
+router.delete(
+  '/:notificationId',
+  
+  notificationController.deleteNotification
+);
+
 // 🔔 ROUTES POUR DISTRIBUTEUR
 router.get(
   '/distributor/:distributorId',
@@ -35,25 +54,6 @@ router.get(
   '/user/:userId/unread-count',
 
   notificationController.getUnreadCount
-);
-
-// 🔔 ACTIONS SUR LES NOTIFICATIONS
-router.put(
-  '/:notificationId/read',
-  authMiddleware,
-  notificationController.markAsRead
-);
-
-router.put(
-  '/user/:userId/read-all',
-  
-  notificationController.markAllAsRead
-);
-
-router.delete(
-  '/:notificationId',
-  
-  notificationController.deleteNotification
 );
 
 // 🔔 ROUTE DE TEST (optionnelle - à supprimer en production)

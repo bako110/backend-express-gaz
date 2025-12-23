@@ -25,7 +25,7 @@ class NotificationService {
       
       const client = await Client.findOne({ 'orders._id': orderId });
       const distributor = await Distributor.findOne({ 'orders._id': orderId });
-      const livreur = await Livreur.findOne({ 'deliveryHistory.orderId': orderId });
+      const livreur = await Livreur.findOne({ 'deliveries.orderId': orderId });
 
       if (!client || !distributor || !livreur) {
         throw new Error('Données incomplètes pour la notification de livraison');
@@ -328,11 +328,29 @@ class NotificationService {
   // ✅ MARQUER COMME LU
   static async markAsRead(notificationId) {
     try {
-      return await Notification.findByIdAndUpdate(
+      console.log("🔔 Service: Marquage notification comme lue - ID:", notificationId);
+      
+      // Vérifier que l'ID est un ObjectId valide
+      const mongoose = require('mongoose');
+      if (!mongoose.Types.ObjectId.isValid(notificationId)) {
+        console.log("❌ Service: ID notification invalide:", notificationId);
+        return null;
+      }
+
+      // Chercher et mettre à jour
+      const notification = await Notification.findByIdAndUpdate(
         notificationId,
-        { read: true },
+        { read: true, updatedAt: new Date() },
         { new: true }
       );
+
+      if (notification) {
+        console.log("✅ Service: Notification mise à jour:", notification._id, "read:", notification.read);
+      } else {
+        console.log("❌ Service: Notification non trouvée après update pour ID:", notificationId);
+      }
+
+      return notification;
     } catch (error) {
       console.error('❌ Erreur marquage comme lu:', error);
       throw error;

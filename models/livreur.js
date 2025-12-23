@@ -26,36 +26,37 @@ const livreurSchema = new mongoose.Schema({
     ]
   },
 
-  todaysDeliveries: [
+  // ✅ UNIFIED DELIVERIES ARRAY - Remplace todaysDeliveries + deliveryHistory
+  deliveries: [
     {
       orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
       clientName: { type: String, required: true },
       clientPhone: { type: String, required: true },
       address: { type: String, required: true },
-      status: { type: String, enum: ['en_cours', 'en_attente', 'termine', 'annule', 'livre'], default: 'en_cours' }, // ✅ 'livre' ajouté
+      status: { 
+        type: String, 
+        enum: ['pending', 'in_progress', 'completed', 'cancelled'], 
+        default: 'pending' 
+      },
       distance: { type: String },
       delivery: { type: String, enum: ['oui', 'non'], default: 'non' },
       priority: { type: String, enum: ['normal', 'high', 'urgent'], default: 'normal' },
       estimatedTime: { type: String },
       total: { type: Number, required: true },
-      scheduledAt: { type: Date, required: true },
-    }
-  ],
-
-  deliveryHistory: [
-    {
-      orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
-      clientName: { type: String },
-      clientPhone: { type: String },
-      address: { type: String },
-      status: { type: String, enum: ['en_cours', 'en_attente', 'termine', 'annule', 'livre'], default: 'en_cours' }, // ✅ 'livre' ajouté
-      total: { type: Number, required: true },
-      deliveredAt: { type: Date, default: Date.now },
-      delivery: { type: String, enum: ['oui', 'non'], default: 'non' },
-      distance: { type: String },
-      priority: { type: String, enum: ['normal', 'high', 'urgent'], default: 'normal' },
-      estimatedTime: { type: String },
-      scheduledAt: { type: Date, required: true },
+      deliveryFee: { type: Number, default: 0 },
+      products: [{ name: String, quantity: Number, type: String }],
+      
+      // ✅ TIMESTAMPS CRITIQUES
+      createdAt: { type: Date, default: Date.now },          // Quand assignée
+      assignedAt: { type: Date, default: Date.now },         // Quand livreur a reçu
+      startedAt: { type: Date },                             // Quand livreur a commencé
+      completedAt: { type: Date },                           // Quand livrée
+      cancelledAt: { type: Date },                           // Quand annulée
+      
+      // ✅ AUTRES INFOS
+      distributorName: { type: String },
+      validationCode: { type: String },
+      cancellationReason: { type: String }
     }
   ],
 
