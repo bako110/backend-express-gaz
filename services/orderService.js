@@ -1123,19 +1123,71 @@ class CommandeService {
     try {
       console.log("🔐 [GET_VALIDATION_CODE] Récupération code pour commande:", orderId);
 
-      const client = await Client.findOne({ "orders._id": orderId });
-      if (!client) throw new Error("Commande non trouvée");
+      // Vérifier si l'orderId est un ObjectId valide
+      if (!mongoose.Types.ObjectId.isValid(orderId)) {
+        console.log("❌ [GET_VALIDATION_CODE] ObjectId invalide:", orderId);
+        throw new Error("ID de commande invalide");
+      }
 
-      const order = client.orders.id(orderId);
-      if (!order) throw new Error("Commande non trouvée");
+      // 1. Chercher dans Client.orders
+      let client = await Client.findOne({ "orders._id": orderId });
+      if (client) {
+        const order = client.orders.id(orderId);
+        if (order && order.validationCode) {
+          console.log("✅ [GET_VALIDATION_CODE] Code trouvé dans Client:", order.validationCode);
+          return {
+            success: true,
+            validationCode: order.validationCode,
+            orderId: orderId
+          };
+        }
+      }
 
-      console.log("✅ [GET_VALIDATION_CODE] Code trouvé:", order.validationCode);
+      // 2. Chercher dans Distributor.orders
+      const distributor = await Distributor.findOne({ "orders._id": orderId });
+      if (distributor) {
+        const order = distributor.orders.id(orderId);
+        if (order && order.validationCode) {
+          console.log("✅ [GET_VALIDATION_CODE] Code trouvé dans Distributor:", order.validationCode);
+          return {
+            success: true,
+            validationCode: order.validationCode,
+            orderId: orderId
+          };
+        }
+      }
 
-      return {
-        success: true,
-        validationCode: order.validationCode,
-        orderId: orderId
-      };
+      // 3. Chercher dans Livreur.deliveries
+      const livreur = await Livreur.findOne({ "deliveries.orderId": orderId });
+      if (livreur) {
+        const delivery = livreur.deliveries.find(d => d.orderId.toString() === orderId.toString());
+        if (delivery && delivery.validationCode) {
+          console.log("✅ [GET_VALIDATION_CODE] Code trouvé dans Livreur:", delivery.validationCode);
+          return {
+            success: true,
+            validationCode: delivery.validationCode,
+            orderId: orderId
+          };
+        }
+      }
+
+      // 4. Si toujours pas trouvé, chercher dans l'historique du client
+      client = await Client.findOne({ "historiqueCommandes.orderCode": { $exists: true } });
+      if (client) {
+        const historique = client.historiqueCommandes.find(h => h._id && h._id.toString() === orderId.toString());
+        if (historique && historique.orderCode) {
+          console.log("✅ [GET_VALIDATION_CODE] Code trouvé dans historique:", historique.orderCode);
+          return {
+            success: true,
+            validationCode: historique.orderCode,
+            orderId: orderId
+          };
+        }
+      }
+
+      console.log("❌ [GET_VALIDATION_CODE] Commande non trouvée dans aucune collection");
+      throw new Error("Commande non trouvée");
+
     } catch (error) {
       console.error("❌ [GET_VALIDATION_CODE] Erreur récupération code:", error);
       throw error;

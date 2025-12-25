@@ -320,11 +320,13 @@ const notificationController = {
 
   /**
    * DELETE /api/notifications/:notificationId
-   * Supprimer une notification (soft delete)
+   * Supprimer une notification
    */
   deleteNotification: async (req, res) => {
     try {
       const { notificationId } = req.params;
+
+      console.log("🗑️ Controller: Suppression notification:", notificationId);
 
       if (!notificationId) {
         return res.status(400).json({
@@ -333,18 +335,63 @@ const notificationController = {
         });
       }
 
-      await NotificationService.deleteNotification(notificationId);
+      const notification = await NotificationService.deleteNotification(notificationId);
+
+      if (!notification) {
+        return res.status(404).json({
+          success: false,
+          error: "Notification non trouvée"
+        });
+      }
 
       res.json({
         success: true,
-        message: "Notification supprimée avec succès"
+        message: "Notification supprimée avec succès",
+        notificationId
       });
 
     } catch (error) {
       console.error("❌ Erreur suppression notification:", error);
       res.status(500).json({
         success: false,
-        error: "Erreur lors de la suppression de la notification"
+        error: "Erreur lors de la suppression de la notification",
+        details: error.message
+      });
+    }
+  },
+
+  /**
+   * DELETE /api/notifications/user/:userId/all
+   * Supprimer toutes les notifications d'un utilisateur
+   */
+  deleteAllNotifications: async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { userType } = req.body;
+
+      console.log("🗑️ Controller: Suppression toutes notifications:", userId, userType);
+
+      if (!userId || !userType) {
+        return res.status(400).json({
+          success: false,
+          error: "User ID et userType sont requis"
+        });
+      }
+
+      const result = await NotificationService.deleteAllNotifications(userId, userType);
+
+      res.json({
+        success: true,
+        message: `${result.deletedCount} notification(s) supprimée(s) avec succès`,
+        deletedCount: result.deletedCount
+      });
+
+    } catch (error) {
+      console.error("❌ Erreur suppression toutes notifications:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erreur lors de la suppression des notifications",
+        details: error.message
       });
     }
   },

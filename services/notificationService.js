@@ -330,14 +330,12 @@ class NotificationService {
     try {
       console.log("🔔 Service: Marquage notification comme lue - ID:", notificationId);
       
-      // Vérifier que l'ID est un ObjectId valide
       const mongoose = require('mongoose');
       if (!mongoose.Types.ObjectId.isValid(notificationId)) {
         console.log("❌ Service: ID notification invalide:", notificationId);
         return null;
       }
 
-      // Chercher et mettre à jour
       const notification = await Notification.findByIdAndUpdate(
         notificationId,
         { read: true, updatedAt: new Date() },
@@ -360,14 +358,17 @@ class NotificationService {
   // ✅ MARQUER TOUTES COMME LUES POUR UN UTILISATEUR
   static async markAllAsRead(userId, userModel) {
     try {
-      return await Notification.updateMany(
+      console.log("🔔 Service: Marquage toutes notifications comme lues:", userId, userModel);
+      const result = await Notification.updateMany(
         { 
           recipientId: userId, 
           recipientModel: userModel, 
           read: false 
         },
-        { read: true }
+        { read: true, updatedAt: new Date() }
       );
+      console.log("✅ Service: Notifications marquées comme lues:", result.modifiedCount);
+      return result;
     } catch (error) {
       console.error('❌ Erreur marquage toutes comme lues:', error);
       throw error;
@@ -389,15 +390,60 @@ class NotificationService {
     }
   }
 
-  // ✅ SUPPRIMER UNE NOTIFICATION (SOFT DELETE)
+  // ✅ SUPPRIMER UNE NOTIFICATION (SUPPRESSION RÉELLE)
   static async deleteNotification(notificationId) {
     try {
-      return await Notification.findByIdAndUpdate(
-        notificationId,
-        { isActive: false }
-      );
+      console.log("🗑️ Service: Suppression notification - ID:", notificationId);
+      
+      const mongoose = require('mongoose');
+      if (!mongoose.Types.ObjectId.isValid(notificationId)) {
+        console.log("❌ Service: ID notification invalide:", notificationId);
+        throw new Error("ID de notification invalide");
+      }
+
+      const notification = await Notification.findByIdAndDelete(notificationId);
+      
+      if (notification) {
+        console.log("✅ Service: Notification supprimée:", notification._id);
+      } else {
+        console.log("⚠️ Service: Notification non trouvée pour suppression:", notificationId);
+      }
+      
+      return notification;
     } catch (error) {
       console.error('❌ Erreur suppression notification:', error);
+      throw error;
+    }
+  }
+
+  // ✅ SUPPRIMER TOUTES LES NOTIFICATIONS D'UN UTILISATEUR
+  static async deleteAllNotifications(userId, userModel) {
+    try {
+      console.log("🗑️ Service: Suppression toutes notifications pour:", userId, userModel);
+      
+      const result = await Notification.deleteMany({
+        recipientId: userId,
+        recipientModel: userModel
+      });
+      
+      console.log("✅ Service: Notifications supprimées:", result.deletedCount);
+      return result;
+    } catch (error) {
+      console.error('❌ Erreur suppression toutes notifications:', error);
+      throw error;
+    }
+  }
+
+  // ✅ NETTOYER LES NOTIFICATIONS EXPIRÉES
+  static async cleanExpiredNotifications() {
+    try {
+      const result = await Notification.deleteMany({
+        expiresAt: { $lt: new Date() }
+      });
+      console.log(`🧹 Notifications expirées nettoyées: ${result.deletedCount}`);
+      return result;
+    } catch (error) {
+      console.error('❌ Erreur nettoyage notifications expirées:', error);
       throw error;
     }
   }

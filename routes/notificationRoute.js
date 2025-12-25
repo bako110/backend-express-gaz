@@ -22,6 +22,12 @@ router.delete(
   notificationController.deleteNotification
 );
 
+router.delete(
+  '/user/:userId/all',
+  
+  notificationController.deleteAllNotifications
+);
+
 // 🔔 ROUTES POUR DISTRIBUTEUR
 router.get(
   '/distributor/:distributorId',
