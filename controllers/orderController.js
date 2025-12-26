@@ -298,6 +298,72 @@ class CommandeController {
       });
     }
   }
+
+  /**
+   * Annulation de commande par le DISTRIBUTEUR
+   * POST /api/orders/:orderId/cancel-by-distributor
+   */
+  static async cancelOrderByDistributor(req, res) {
+    try {
+      console.log("🚫 [CONTROLLER] Annulation par distributeur");
+      const { orderId } = req.params;
+      const { distributorId, reason } = req.body;
+
+      if (!distributorId) {
+        return res.status(400).json({
+          success: false,
+          message: "L'ID du distributeur est requis"
+        });
+      }
+
+      const result = await CommandeService.cancelOrderByDistributor(
+        orderId,
+        distributorId,
+        reason || "Annulée par le distributeur"
+      );
+
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('❌ [CONTROLLER] Erreur annulation distributeur:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+
+  /**
+   * Annulation de commande par le LIVREUR
+   * POST /api/orders/:orderId/cancel-by-driver
+   */
+  static async cancelOrderByDriver(req, res) {
+    try {
+      console.log("🚫 [CONTROLLER] Annulation par livreur");
+      const { orderId } = req.params;
+      const { livreurId, reason } = req.body;
+
+      if (!livreurId) {
+        return res.status(400).json({
+          success: false,
+          message: "L'ID du livreur est requis"
+        });
+      }
+
+      const result = await CommandeService.cancelOrderByDriver(
+        orderId,
+        livreurId,
+        reason || "Annulée par le livreur"
+      );
+
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error('❌ [CONTROLLER] Erreur annulation livreur:', error);
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
 }
 
 module.exports = CommandeController;

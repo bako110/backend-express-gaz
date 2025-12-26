@@ -163,4 +163,10 @@ router.post('/:orderId/validate-delivery', CommandeController.validateDelivery);
 // Route pour compléter un retrait sur place avec code (POST)
 router.post('/:orderId/complete-pickup', CommandeController.completePickup);
 
+// Route pour annuler une commande par le distributeur (POST)
+router.post('/:orderId/cancel-by-distributor', CommandeController.cancelOrderByDistributor);
+
+// Route pour annuler une commande par le livreur (POST)
+router.post('/:orderId/cancel-by-driver', CommandeController.cancelOrderByDriver);
+
 module.exports = router;

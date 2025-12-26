@@ -901,6 +901,12 @@ class CommandeService {
         newStatus
       });
 
+      // 🚫 SI ANNULATION → UTILISER LA LOGIQUE DE REMBOURSEMENT
+      if (newStatus === 'annule') {
+        console.log("🚫 [CONFIRM_ORDER] Statut = annule → Appel de rejectOrder pour remboursement");
+        return await this.rejectOrder(orderId, distributorId, "Annulée par le distributeur");
+      }
+
       const distributor = await Distributor.findById(distributorId);
       if (!distributor) throw new Error('Distributeur non trouvé');
 
@@ -1044,10 +1050,10 @@ class CommandeService {
       const transactionId = this.generateTransactionId();
       client.walletTransactions.push({
         transactionId,
-        type: 'remboursement',
+        type: 'recharge',
         amount: refundAmount,
         date: new Date(),
-        description: `❌ REMBOURSEMENT - Commande ${orderId} refusée`,
+        description: `❌ REMBOURSEMENT - Commande ${orderId} refusée - ${reason}`,
         ancienSolde: ancienSolde,
         nouveauSolde: client.credit,
         details: {
@@ -1270,6 +1276,235 @@ class CommandeService {
       };
     } catch (error) {
       console.error("❌ [RESYNC] Erreur:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Annulation de commande par le DISTRIBUTEUR
+   * - Rembourse le client intégralement
+   * - Annule la commande
+   * - Envoie une notification au client
+   */
+  static async cancelOrderByDistributor(orderId, distributorId, reason = "Annulée par le distributeur") {
+    try {
+      console.log("🚫 [CANCEL_DISTRIBUTOR] Début annulation:", { orderId, distributorId, reason });
+
+      // Rechercher le client avec la commande
+      const client = await Client.findOne({ 'orders._id': orderId }).populate('user');
+      if (!client) {
+        console.error("❌ [CANCEL_DISTRIBUTOR] Client introuvable pour orderId:", orderId);
+        throw new Error("Commande introuvable");
+      }
+
+      console.log("✅ [CANCEL_DISTRIBUTOR] Client trouvé:", {
+        clientId: client._id,
+        userId: client.user,
+        ordersCount: client.orders.length
+      });
+
+      const order = client.orders.id(orderId);
+      if (!order) {
+        console.error("❌ [CANCEL_DISTRIBUTOR] Commande introuvable dans client.orders");
+        throw new Error("Commande introuvable");
+      }
+
+      console.log("✅ [CANCEL_DISTRIBUTOR] Commande trouvée:", {
+        orderId: order._id,
+        status: order.status,
+        total: order.total,
+        distributorId: order.distributorId
+      });
+
+      // Vérifier que c'est bien le bon distributeur
+      if (order.distributorId.toString() !== distributorId.toString()) {
+        console.error("❌ [CANCEL_DISTRIBUTOR] Distributeur non autorisé");
+        throw new Error("Vous n'êtes pas autorisé à annuler cette commande");
+      }
+
+      // Vérifier que la commande peut être annulée
+      if (order.status === 'livre' || order.status === 'annule') {
+        console.error("❌ [CANCEL_DISTRIBUTOR] Statut invalide:", order.status);
+        throw new Error(`Impossible d'annuler une commande ${order.status}`);
+      }
+
+      const montantTotal = order.total || 0;
+      const ancienSoldeClient = client.credit || 0;
+      const nouveauSolde = ancienSoldeClient + montantTotal;
+
+      console.log("💰 [CANCEL_DISTRIBUTOR] Remboursement:", {
+        montantTotal,
+        ancienSoldeClient,
+        nouveauSolde
+      });
+
+      // REMBOURSEMENT INTÉGRAL DU CLIENT
+      client.credit = nouveauSolde;
+
+      // Ajouter transaction de remboursement
+      if (!client.transactions) client.transactions = [];
+      client.transactions.push({
+        type: 'credit',
+        amount: montantTotal,
+        description: `Remboursement commande #${orderId.toString().slice(-8)} - ${reason}`,
+        date: new Date(),
+        orderId: orderId,
+        status: 'completed'
+      });
+
+      console.log("📝 [CANCEL_DISTRIBUTOR] Transaction ajoutée:", {
+        transactionCount: client.transactions.length,
+        lastTransaction: client.transactions[client.transactions.length - 1]
+      });
+
+      // Mettre à jour le statut de la commande
+      order.status = 'annule';
+      order.cancelReason = reason;
+      order.cancelledBy = 'distributor';
+      order.cancelledAt = new Date();
+
+      console.log("💾 [CANCEL_DISTRIBUTOR] Sauvegarde du client...");
+      await client.save();
+      console.log("✅ [CANCEL_DISTRIBUTOR] Client sauvegardé avec succès");
+
+      // Envoyer notification au client
+      console.log("📧 [CANCEL_DISTRIBUTOR] Envoi notification au client...");
+      try {
+        const notifResult = await NotificationService.createNotification({
+          userId: client.user,
+          userType: 'client',
+          title: 'Commande annulée',
+          message: `Votre commande a été annulée par le distributeur. ${montantTotal.toLocaleString()} FCFA remboursés.`,
+          type: 'order_cancelled',
+          data: { orderId: orderId.toString(), refundAmount: montantTotal }
+        });
+        console.log("✅ [CANCEL_DISTRIBUTOR] Notification envoyée:", notifResult);
+      } catch (notifError) {
+        console.error("⚠️ [CANCEL_DISTRIBUTOR] Erreur notification:", notifError);
+      }
+
+      console.log("✅ [CANCEL_DISTRIBUTOR] Annulation réussie - Résumé:", {
+        orderId: orderId.toString(),
+        refundAmount: montantTotal,
+        oldBalance: ancienSoldeClient,
+        newBalance: nouveauSolde
+      });
+
+      return {
+        success: true,
+        message: "Commande annulée et client remboursé",
+        refundAmount: montantTotal,
+        oldClientBalance: ancienSoldeClient,
+        newClientBalance: nouveauSolde
+      };
+
+    } catch (error) {
+      console.error("❌ [CANCEL_DISTRIBUTOR] Erreur:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Annulation de commande par le LIVREUR
+   * - Signale le distributeur
+   * - Libère le livreur (statut disponible)
+   * - Permet la réassignation à un autre livreur
+   * - Envoie notification au distributeur
+   */
+  static async cancelOrderByDriver(orderId, livreurId, reason = "Annulée par le livreur") {
+    try {
+      console.log("🚫 [CANCEL_DRIVER] Début annulation:", { orderId, livreurId, reason });
+
+      // Rechercher le client avec la commande
+      const client = await Client.findOne({ 'orders._id': orderId });
+      if (!client) throw new Error("Commande introuvable");
+
+      const order = client.orders.id(orderId);
+      if (!order) throw new Error("Commande introuvable");
+
+      // Vérifier que c'est bien le bon livreur
+      if (!order.livreurId || order.livreurId.toString() !== livreurId.toString()) {
+        throw new Error("Vous n'êtes pas assigné à cette commande");
+      }
+
+      // Vérifier que la commande est en livraison
+      if (order.status !== 'en_livraison') {
+        throw new Error("Cette commande n'est pas en cours de livraison");
+      }
+
+      // Récupérer le livreur
+      const livreur = await Livreur.findById(livreurId);
+      if (!livreur) throw new Error("Livreur introuvable");
+
+      // Libérer le livreur
+      livreur.status = 'disponible';
+      await livreur.save();
+      console.log("✅ [CANCEL_DRIVER] Livreur libéré:", livreurId);
+
+      // Retour au statut confirmé pour permettre réassignation CÔTÉ CLIENT
+      order.status = 'confirme';
+      order.livreurId = null;
+      order.cancelReason = reason;
+      order.cancelledBy = 'driver';
+      order.driverCancelledAt = new Date();
+
+      await client.save();
+      console.log("✅ [CANCEL_DRIVER] Commande client mise à jour");
+
+      // Mettre à jour AUSSI la commande côté DISTRIBUTEUR
+      const distributor = await Distributor.findById(order.distributorId);
+      if (distributor) {
+        const distributorOrder = distributor.orders.id(orderId);
+        if (distributorOrder) {
+          distributorOrder.status = 'confirme';
+          distributorOrder.livreurId = null;
+          distributorOrder.cancelReason = reason;
+          distributorOrder.cancelledBy = 'driver';
+          distributorOrder.driverCancelledAt = new Date();
+          await distributor.save();
+          console.log("✅ [CANCEL_DRIVER] Commande distributeur mise à jour");
+        }
+      }
+
+      // Envoyer notification au distributeur
+      try {
+        const distributor = await Distributor.findById(order.distributorId).populate('user');
+        if (distributor && distributor.user) {
+          await NotificationService.createNotification({
+            recipientId: distributor._id,
+            recipientModel: 'Distributor',
+            title: '🚫 Livreur a annulé',
+            message: `Le livreur ${livreur.user?.name || 'inconnu'} a annulé la commande #${orderId.toString().slice(-8)}. Raison: ${reason}. Veuillez réassigner un autre livreur.`,
+            category: 'delivery',
+            type: 'delivery_delayed',
+            priority: 'high',
+            orderId: orderId,
+            driverId: livreurId,
+            distributorId: order.distributorId,
+            data: { 
+              orderId: orderId.toString(), 
+              driverName: livreur.user?.name || 'inconnu',
+              reason,
+              action: 'driver_cancelled'
+            }
+          });
+          console.log("✅ [CANCEL_DRIVER] Notification envoyée au distributeur");
+        }
+      } catch (notifError) {
+        console.warn("⚠️ [CANCEL_DRIVER] Erreur notification:", notifError);
+      }
+
+      console.log("✅ [CANCEL_DRIVER] Annulation réussie - Livreur libéré, commande prête pour réassignation");
+
+      return {
+        success: true,
+        message: "Commande annulée. Le distributeur peut assigner un nouveau livreur.",
+        orderStatus: 'confirme',
+        driverStatus: 'disponible'
+      };
+
+    } catch (error) {
+      console.error("❌ [CANCEL_DRIVER] Erreur:", error);
       throw error;
     }
   }
