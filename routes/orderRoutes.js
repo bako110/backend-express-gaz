@@ -46,11 +46,31 @@ router.get(
 
       // Essayer de trouver le client SOIT par son _id SOIT par son user ID
       console.log("🔍 [ROUTE] Recherche 1: Par Client._id");
-      let client = await Client.findById(clientId);
+      let client = await Client.findById(clientId)
+        .populate({
+          path: 'orders.distributorId',
+          select: 'address phone',
+          populate: { path: 'user', select: 'name phone' }
+        })
+        .populate({
+          path: 'historiqueCommandes.distributorId',
+          select: 'address phone',
+          populate: { path: 'user', select: 'name phone' }
+        });
       
       if (!client) {
         console.log("🔍 [ROUTE] Recherche 2: Par Client.user (ID utilisateur)");
-        client = await Client.findOne({ user: clientId });
+        client = await Client.findOne({ user: clientId })
+          .populate({
+            path: 'orders.distributorId',
+            select: 'address phone',
+            populate: { path: 'user', select: 'name phone' }
+          })
+          .populate({
+            path: 'historiqueCommandes.distributorId',
+            select: 'address phone',
+            populate: { path: 'user', select: 'name phone' }
+          });
       }
 
       if (!client) {
@@ -103,10 +123,30 @@ router.get(
       }
 
       // Essayer de trouver le client SOIT par son _id SOIT par son user ID
-      let client = await Client.findById(userId);
+      let client = await Client.findById(userId)
+        .populate({
+          path: 'orders.distributorId',
+          select: 'address phone',
+          populate: { path: 'user', select: 'name phone' }
+        })
+        .populate({
+          path: 'historiqueCommandes.distributorId',
+          select: 'address phone',
+          populate: { path: 'user', select: 'name phone' }
+        });
       
       if (!client) {
-        client = await Client.findOne({ user: userId });
+        client = await Client.findOne({ user: userId })
+          .populate({
+            path: 'orders.distributorId',
+            select: 'address phone',
+            populate: { path: 'user', select: 'name phone' }
+          })
+          .populate({
+            path: 'historiqueCommandes.distributorId',
+            select: 'address phone',
+            populate: { path: 'user', select: 'name phone' }
+          });
       }
 
       if (!client) {
