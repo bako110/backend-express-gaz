@@ -22,6 +22,7 @@ const userRoutes = require('./routes/userRoutes');
 // const orderAdminRoutes = require('./routes/orderAdminRoutes');
 // Cloudinary
 const cloudinary = require('./cloudinaryConfig');
+const pinRoutes = require('./routes/pinRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -56,6 +57,7 @@ app.use('/api/users', userRoutes);
 // app.use('/api/user-data', userDataRoutes);
 // app.use('/api/transactions', transactionRoutes);
 // app.use('/api/admin/orders', orderAdminRoutes);
+app.use('/api/pin', pinRoutes);
 
 console.log('✅ Toutes les routes API montées');
 console.log('   - /api/auth');
