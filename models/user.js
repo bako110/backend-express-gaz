@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema(
     },
     userType: {
       type: String,
-      enum: ['distributeur', 'client', 'livreur'],
+      enum: ['distributeur', 'client', 'livreur', 'admin'],
       required: true,
     },
     photo: {

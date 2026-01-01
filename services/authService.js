@@ -249,6 +249,84 @@ static async updateKYC(userId, idDocumentFile, livePhotoFile) {
   }
 }
 
+  // ------------------- UPDATE PROFILE -------------------
+  static async updateProfile(userId, profileData, photoFile) {
+    try {
+      const user = await User.findById(userId);
+      if (!user) throw new Error("Utilisateur introuvable");
+
+      // Mettre à jour les champs du User
+      if (profileData.name) user.name = profileData.name;
+      if (profileData.neighborhood) user.neighborhood = profileData.neighborhood;
+
+      // Upload de la photo si fournie
+      if (photoFile) {
+        const result = await uploadToCloudinary(photoFile.buffer, 'profiles');
+        user.photo = result.secure_url;
+      }
+
+      await user.save();
+
+      // Mettre à jour le profil spécifique selon le type d'utilisateur
+      let profile = null;
+      if (user.userType === 'client') {
+        profile = await Client.findOneAndUpdate(
+          { user: user._id },
+          { 
+            $set: { 
+              address: profileData.address || undefined,
+              neighborhood: profileData.neighborhood || undefined,
+              email: profileData.email || undefined
+            } 
+          },
+          { new: true }
+        );
+      } else if (user.userType === 'distributeur') {
+        profile = await Distributor.findOneAndUpdate(
+          { user: user._id },
+          { 
+            $set: { 
+              address: profileData.address || undefined,
+              zone: profileData.zone || undefined,
+              neighborhood: profileData.neighborhood || undefined,
+              email: profileData.email || undefined
+            } 
+          },
+          { new: true }
+        );
+      } else if (user.userType === 'livreur') {
+        profile = await Livreur.findOneAndUpdate(
+          { user: user._id },
+          { 
+            $set: { 
+              zone: profileData.zone || undefined,
+              neighborhood: profileData.neighborhood || undefined,
+              vehicleType: profileData.vehicleType || undefined,
+              email: profileData.email || undefined
+            } 
+          },
+          { new: true }
+        );
+      }
+
+      return {
+        success: true,
+        message: "Profil mis à jour avec succès",
+        user: {
+          id: user._id.toString(),
+          name: user.name,
+          phone: user.phone,
+          userType: user.userType,
+          photo: user.photo,
+          neighborhood: user.neighborhood
+        },
+        profile: profile ? profile.toObject() : null
+      };
+    } catch (error) {
+      throw new Error(error.message || "Erreur lors de la mise à jour du profil");
+    }
+  }
+
 }
 
 module.exports = UserService;

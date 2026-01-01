@@ -1,4 +1,4 @@
-const { sendOtpForReset, checkOtp, updatePin } = require('../services/pinService');
+const { sendOtpForReset, checkOtp, updatePin, changePin } = require('../services/pinService');
 
 // Étape 1: Envoi OTP
 async function sendResetCode(req, res) {
@@ -42,4 +42,21 @@ async function resetPin(req, res) {
 }
 
 
-module.exports = { sendResetCode, verifyResetCode, resetPin };
+// Changer PIN avec vérification de l'ancien PIN
+async function changePinWithVerification(req, res) {
+  try {
+    const { phone, currentPin, newPin } = req.body;
+    
+    if (!phone || !currentPin || !newPin) {
+      return res.status(400).json({ error: 'Téléphone, ancien PIN et nouveau PIN sont requis' });
+    }
+
+    await changePin(phone, currentPin, newPin);
+    res.status(200).json({ message: 'PIN modifié avec succès' });
+  } catch (err) {
+    console.error('❌ Erreur changePinWithVerification:', err);
+    res.status(400).json({ error: err.message });
+  }
+}
+
+module.exports = { sendResetCode, verifyResetCode, resetPin, changePinWithVerification };

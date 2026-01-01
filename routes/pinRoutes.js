@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { sendResetCode, verifyResetCode, resetPin } = require('../controllers/pinController');
+const { sendResetCode, verifyResetCode, resetPin, changePinWithVerification } = require('../controllers/pinController');
 
 // Étape 1 : Envoyer OTP pour réinitialisation PIN
 router.post('/send-reset-code', sendResetCode);
@@ -10,5 +10,8 @@ router.post('/verify-reset-code', verifyResetCode);
 
 // Étape 3 : Réinitialiser le PIN
 router.post('/reset-pin', resetPin);
+
+// Changer PIN avec vérification de l'ancien PIN
+router.post('/change-pin', changePinWithVerification);
 
 module.exports = router;

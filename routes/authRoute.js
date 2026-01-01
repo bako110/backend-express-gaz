@@ -26,4 +26,14 @@ router.post(
 
 router.get('/:userId/kyc', AuthController.getKYCStatus);
 
+// Récupérer le profil
+router.get('/:id/profile', AuthController.getProfile);
+
+// Mettre à jour le profil avec photo
+router.put(
+  '/:id/profile',
+  upload.single('photo'),
+  AuthController.updateProfile
+);
+
 module.exports = router;

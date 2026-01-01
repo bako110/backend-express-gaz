@@ -153,6 +153,65 @@ class AuthController {
       });
     }
   }
+
+  // ====================
+  // MISE À JOUR DU PROFIL
+  // ====================
+  static async updateProfile(req, res) {
+    try {
+      const userId = req.params.id;
+      const { name, address, zone, neighborhood, vehicleType } = req.body;
+      const photoFile = req.file;
+
+      const result = await UserService.updateProfile(
+        userId,
+        { name, address, zone, neighborhood, vehicleType },
+        photoFile
+      );
+
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Erreur mise à jour profil:', error);
+      res.status(500).json({ 
+        success: false,
+        message: error.message || 'Erreur lors de la mise à jour du profil' 
+      });
+    }
+  }
+
+  // ====================
+  // RÉCUPÉRATION DU PROFIL
+  // ====================
+  static async getProfile(req, res) {
+    try {
+      const userId = req.params.id;
+      const user = await User.findById(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: 'Utilisateur introuvable' });
+      }
+
+      const profile = await UserService.getProfile(user);
+
+      res.status(200).json({
+        success: true,
+        user: {
+          id: user._id.toString(),
+          name: user.name,
+          phone: user.phone,
+          userType: user.userType,
+          photo: user.photo,
+          neighborhood: user.neighborhood
+        },
+        profile
+      });
+    } catch (error) {
+      console.error('Erreur récupération profil:', error);
+      res.status(500).json({ 
+        message: error.message || 'Erreur lors de la récupération du profil' 
+      });
+    }
+  }
 }
 
 module.exports = AuthController;

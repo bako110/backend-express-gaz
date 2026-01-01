@@ -1,6 +1,8 @@
 require('dotenv').config(); // Charger les variables d'environnement
 const express = require('express');
 const cors = require('cors');
+const http = require('http');
+const { Server } = require('socket.io');
 const connectDB = require('./config/db');
 const path = require('path');
 
@@ -19,12 +21,21 @@ const qrCodeRoutes = require('./routes/qrcodeRoute');
 const userRoutes = require('./routes/userRoutes');
 // const userDataRoutes = require('./routes/userDataRoutes');
 // const transactionRoutes = require('./routes/transactionRoutes');
-// const orderAdminRoutes = require('./routes/orderAdminRoutes');
+const orderAdminRoutes = require('./routes/orderAdminRoutes');
 // Cloudinary
 const cloudinary = require('./cloudinaryConfig');
 const pinRoutes = require('./routes/pinRoutes');
+const messageRoutes = require('./routes/messageRoutes');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 
 // ==============================
@@ -56,8 +67,9 @@ app.use('/api/commande', qrCodeRoutes);
 app.use('/api/users', userRoutes);
 // app.use('/api/user-data', userDataRoutes);
 // app.use('/api/transactions', transactionRoutes);
-// app.use('/api/admin/orders', orderAdminRoutes);
+app.use('/api/admin/orders', orderAdminRoutes);
 app.use('/api/pin', pinRoutes);
+app.use('/api/messages', messageRoutes);
 
 console.log('✅ Toutes les routes API montées');
 console.log('   - /api/auth');
@@ -71,6 +83,7 @@ console.log('   - /api/delivery-info');
 console.log('   - /api/notifications');
 console.log('   - /api/commande');
 console.log('   - /api/users');
+console.log('   - /api/messages');
 
 
 // ==============================
@@ -91,8 +104,16 @@ app.use((err, req, res, next) => {
 });
 
 // ==============================
+//      Socket.io pour messagerie temps réel
+// ==============================
+const MessageSocket = require('./socket/messageSocket');
+new MessageSocket(io);
+console.log('✅ Socket.io configuré pour la messagerie temps réel');
+
+// ==============================
 //      Lancer serveur
 // ==============================
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`🚀 Serveur démarré sur le port ${PORT}`);
+  console.log(`🔌 Socket.io prêt pour les connexions temps réel`);
 });

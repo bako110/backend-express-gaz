@@ -268,6 +268,11 @@ async function getLivreurDashboard(livreurId) {
       vehicleType: livreur.vehicleType,
       zone: livreur.zone,
       wallet: livreur.wallet,
+      availability: {
+        isAvailable: livreur.availability?.isAvailable || false,
+        lastToggleTime: livreur.availability?.lastToggleTime,
+        currentLocation: livreur.availability?.currentLocation
+      },
       todaysDeliveries: todayDeliveries.map(d => ({
         orderId: d.orderId,
         clientName: d.clientName,

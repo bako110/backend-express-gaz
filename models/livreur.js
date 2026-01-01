@@ -7,10 +7,24 @@ const livreurSchema = new mongoose.Schema({
   photo: { type: String, default: '' },
   totalLivraisons: { type: Number, default: 0 },
   totalRevenue: { type: Number, default: 0 },
+  // ------------------- Disponibilité et GPS -------------------
+  availability: {
+    isAvailable: { type: Boolean, default: false }, // Contrôlé par le livreur
+    lastToggleTime: { type: Date }, // Quand il a changé son statut
+    currentLocation: {
+      latitude: { type: Number, min: -90, max: 90 },
+      longitude: { type: Number, min: -180, max: 180 },
+      accuracy: { type: Number },
+      timestamp: { type: Date }
+    },
+    activeZone: { type: String }, // Zone GPS active
+    searchRadius: { type: Number, default: 5000 } // Rayon en mètres (5km par défaut)
+  },
+
   status: {
     type: String,
-    enum: ['disponible', 'occupé'],
-    default: 'disponible'
+    enum: ['disponible', 'occupé', 'hors_ligne'],
+    default: 'hors_ligne'
   },
 
   wallet: {
@@ -59,6 +73,47 @@ const livreurSchema = new mongoose.Schema({
       cancellationReason: { type: String }
     }
   ],
+
+  // ------------------- Scoring et Fiabilité -------------------
+  scoring: {
+    overallScore: { type: Number, default: 0, min: 0, max: 100 }, // Score global sur 100
+    
+    // Notes moyennes
+    ratings: {
+      overall: { type: Number, default: 0, min: 0, max: 5 },
+      client: { type: Number, default: 0, min: 0, max: 5 },
+      distributeur: { type: Number, default: 0, min: 0, max: 5 },
+      count: { type: Number, default: 0 }
+    },
+    
+    // Fiabilité
+    reliability: {
+      completionRate: { type: Number, default: 100 }, // % de livraisons terminées
+      onTimeRate: { type: Number, default: 100 }, // % de livraisons à l'heure
+      cancellationRate: { type: Number, default: 0 }, // % d'annulations
+      totalCompleted: { type: Number, default: 0 },
+      totalCancelled: { type: Number, default: 0 },
+      totalLate: { type: Number, default: 0 }
+    },
+    
+    // Charge actuelle
+    currentLoad: {
+      activeDeliveries: { type: Number, default: 0 }, // Nombre de livraisons en cours
+      maxCapacity: { type: Number, default: 5 } // Capacité maximale
+    },
+    
+    // Dernière mise à jour du score
+    lastCalculated: { type: Date, default: Date.now }
+  },
+
+  // ------------------- Alertes et Restrictions -------------------
+  alerts: {
+    hasWarnings: { type: Boolean, default: false },
+    warningCount: { type: Number, default: 0 },
+    isRestricted: { type: Boolean, default: false },
+    restrictionReason: { type: String },
+    restrictionUntil: { type: Date }
+  },
 
   stats: {
     today: {

@@ -39,5 +39,27 @@ async function updatePin(phone, newPin) {
   return true;
 }
 
+// Changer PIN avec vérification de l'ancien PIN
+async function changePin(phone, currentPin, newPin) {
+  const cleanPhone = phone.replace(/\s+/g, '');
+  
+  if (!/^\d{4}$/.test(newPin)) {
+    throw new Error('Le nouveau PIN doit contenir 4 chiffres');
+  }
 
-module.exports = { sendOtpForReset, checkOtp, updatePin };
+  const user = await User.findOne({ phone: cleanPhone }).select('+pin');
+  if (!user) throw new Error('Utilisateur non trouvé');
+
+  // Vérifier l'ancien PIN
+  const isMatch = await user.matchPin(currentPin);
+  if (!isMatch) {
+    throw new Error('L\'ancien PIN est incorrect');
+  }
+
+  // Mettre à jour le PIN
+  user.pin = newPin;
+  await user.save();
+  return true;
+}
+
+module.exports = { sendOtpForReset, checkOtp, updatePin, changePin };

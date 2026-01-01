@@ -1,4 +1,7 @@
 const User = require('../models/user');
+const Client = require('../models/client');
+const Distributor = require('../models/distributeur');
+const Livreur = require('../models/livreur');
 const asyncHandler = require('express-async-handler');
 
 // @desc    Récupérer tous les utilisateurs
@@ -45,11 +48,47 @@ const getUsers = asyncHandler(async (req, res) => {
     .skip(skip)
     .limit(limitNum);
 
+  // Enrichir les données avec les informations des collections spécifiques
+  const enrichedUsers = await Promise.all(users.map(async (user) => {
+    const userObj = user.toObject();
+    
+    if (user.userType === 'client') {
+      const client = await Client.findOne({ user: user._id });
+      if (client) {
+        userObj.clientData = {
+          credit: client.credit,
+          address: client.address
+        };
+      }
+    } else if (user.userType === 'distributeur') {
+      const distributor = await Distributor.findOne({ user: user._id });
+      if (distributor) {
+        userObj.distributorData = {
+          zone: distributor.zone,
+          revenue: distributor.revenue,
+          balance: distributor.balance
+        };
+      }
+    } else if (user.userType === 'livreur') {
+      const livreur = await Livreur.findOne({ user: user._id });
+      if (livreur) {
+        userObj.livreurData = {
+          zone: livreur.zone,
+          vehicleType: livreur.vehicleType,
+          totalLivraisons: livreur.totalLivraisons,
+          isAvailable: livreur.availability?.isAvailable
+        };
+      }
+    }
+    
+    return userObj;
+  }));
+
   const total = await User.countDocuments(query);
   const totalPages = Math.ceil(total / limitNum);
 
   res.json({
-    users,
+    users: enrichedUsers,
     total,
     page: pageNum,
     limit: limitNum,
