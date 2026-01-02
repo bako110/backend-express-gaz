@@ -31,7 +31,10 @@ async function getNearbyDistributors(livreurId, maxDistance = 5000) {
   try {
     // 1. Récupérer le livreur et sa position
     const livreur = await Livreur.findById(livreurId).populate('user');
-    if (!livreur) throw new Error('Livreur non trouvé');
+    if (!livreur) {
+      console.log('⚠️ Livreur non trouvé:', livreurId);
+      return []; // Retourner tableau vide au lieu de throw
+    }
 
     // Position du livreur
     const livreurLat = livreur.availability?.currentLocation?.latitude || 
@@ -40,16 +43,25 @@ async function getNearbyDistributors(livreurId, maxDistance = 5000) {
                        livreur.user?.lastLocation?.longitude;
 
     if (!livreurLat || !livreurLon) {
-      throw new Error('Position GPS du livreur non disponible');
+      console.log('⚠️ Position GPS du livreur non disponible');
+      return []; // Retourner tableau vide au lieu de throw
     }
 
     // 2. Récupérer tous les distributeurs avec leur user
     const distributors = await Distributor.find()
       .populate('user', 'name phone photo lastLocation');
 
+    if (!distributors || distributors.length === 0) {
+      console.log('ℹ️ Aucun distributeur trouvé dans la base');
+      return [];
+    }
+
     // 3. Calculer la distance pour chaque distributeur
     const nearbyDistributors = distributors
       .map(distributor => {
+        // Vérifier que le distributeur a un user
+        if (!distributor.user) return null;
+
         const distLat = distributor.user?.lastLocation?.latitude;
         const distLon = distributor.user?.lastLocation?.longitude;
 
@@ -65,8 +77,8 @@ async function getNearbyDistributors(livreurId, maxDistance = 5000) {
             phone: distributor.user.phone,
             photo: distributor.user.photo
           },
-          address: distributor.address,
-          zone: distributor.zone,
+          address: distributor.address || '',
+          zone: distributor.zone || '',
           distance: Math.round(distance),
           distanceKm: (distance / 1000).toFixed(2),
           // Statistiques utiles
@@ -79,9 +91,12 @@ async function getNearbyDistributors(livreurId, maxDistance = 5000) {
       .filter(d => d !== null && d.distance <= maxDistance)
       .sort((a, b) => a.distance - b.distance);
 
+    console.log(`✅ ${nearbyDistributors.length} distributeurs trouvés dans un rayon de ${maxDistance}m`);
     return nearbyDistributors;
   } catch (error) {
-    throw new Error('Erreur lors de la recherche de distributeurs: ' + error.message);
+    console.error('❌ Erreur getNearbyDistributors:', error);
+    // Retourner tableau vide au lieu de throw pour éviter crash
+    return [];
   }
 }
 

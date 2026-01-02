@@ -59,6 +59,7 @@ app.use('/api/distributors', searchRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/distributeurs/orders', orderRoutesDistributeur);
 app.use('/api/livreur', livreurRoutes);
+app.use('/api/livreurs', livreurRoutes); // Route alternative avec 's' pour compatibilité frontend
 app.use('/api/wallet', walletRoutes);
 app.use('/api/location', locationRoutes);
 app.use('/api/delivery-info', feeRoutes);

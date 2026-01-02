@@ -14,12 +14,13 @@ router.post('/login', AuthController.login);
 // Connexion avec téléphone + PIN
 router.post('/login-phone', AuthController.loginWithPhone);
 
-// KYC avec upload des fichiers
+// KYC avec upload des fichiers (3 étapes)
 router.post(
   '/:id/kyc',
   upload.fields([
-    { name: 'idDocument', maxCount: 1 },
-    { name: 'livePhoto', maxCount: 1 }
+    { name: 'idDocumentFront', maxCount: 1 },
+    { name: 'idDocumentBack', maxCount: 1 },
+    { name: 'facePhoto', maxCount: 1 }
   ]),
   AuthController.submitKYC
 );

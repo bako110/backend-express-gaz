@@ -5,12 +5,14 @@ const Client = require('../models/client');
 const CommandeController = require('../controllers/orderController');
 const QrcodeController = require('../controllers/qrcodeController');
 const authMiddleware = require('../middlewares/auth'); // ton middleware JWT
+const { checkKYCVerified } = require('../middlewares/checkKYC');
 
 // =============== ROUTES STATIQUES ET POST (AVANT LES ROUTES DYNAMIQUES) ===============
 
-// ------------------- Route pour créer une commande (POST) -------------------
+// ------------------- Route pour créer une commande (POST) - KYC REQUIS -------------------
 router.post(
   '/',
+  checkKYCVerified,
   CommandeController.createCommande
 );
 

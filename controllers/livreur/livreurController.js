@@ -130,6 +130,15 @@ async function getNearbyDistributors(req, res) {
     const { livreurId } = req.params;
     const { maxDistance } = req.query; // en mètres
 
+    // Valider livreurId
+    if (!livreurId || livreurId === 'null' || livreurId === 'undefined') {
+      return res.status(400).json({
+        success: false,
+        message: 'ID livreur invalide',
+        data: []
+      });
+    }
+
     const distributors = await proximityService.getNearbyDistributors(
       livreurId,
       maxDistance ? parseInt(maxDistance) : 5000
@@ -141,9 +150,11 @@ async function getNearbyDistributors(req, res) {
       data: distributors
     });
   } catch (error) {
+    console.error('Erreur getNearbyDistributors:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message || 'Erreur lors de la récupération des distributeurs',
+      data: []
     });
   }
 }

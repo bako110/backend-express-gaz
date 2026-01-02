@@ -207,36 +207,43 @@ static async registerUser({ name, phone, pin, userType, address, zone, neighborh
     return null;
   }
 
-  // ------------------- UPDATE KYC -------------------
-
-
-static async updateKYC(userId, idDocumentFile, livePhotoFile) {
+  // ------------------- UPDATE KYC (3 étapes) -------------------
+static async updateKYC(userId, idDocumentFrontFile, idDocumentBackFile, facePhotoFile) {
   try {
     const user = await User.findById(userId);
     if (!user) throw new Error("Utilisateur introuvable");
 
-    let idDocumentUrl = null;
-    let livePhotoUrl = null;
+    let idDocumentFrontUrl = null;
+    let idDocumentBackUrl = null;
+    let facePhotoUrl = null;
 
-    if (idDocumentFile) {
-      const result = await uploadToCloudinary(idDocumentFile.buffer, 'kyc/idDocuments');
-      idDocumentUrl = result.secure_url;
+    // Upload recto de la pièce d'identité
+    if (idDocumentFrontFile) {
+      const result = await uploadToCloudinary(idDocumentFrontFile.buffer, 'kyc/idDocuments/front');
+      idDocumentFrontUrl = result.secure_url;
     }
 
-    if (livePhotoFile) {
-      const result = await uploadToCloudinary(livePhotoFile.buffer, 'kyc/livePhotos');
-      livePhotoUrl = result.secure_url;
+    // Upload verso de la pièce d'identité
+    if (idDocumentBackFile) {
+      const result = await uploadToCloudinary(idDocumentBackFile.buffer, 'kyc/idDocuments/back');
+      idDocumentBackUrl = result.secure_url;
+    }
+
+    // Upload photo du visage
+    if (facePhotoFile) {
+      const result = await uploadToCloudinary(facePhotoFile.buffer, 'kyc/facePhotos');
+      facePhotoUrl = result.secure_url;
     }
 
     user.kyc = {
-      idDocument: idDocumentUrl,
-      livePhoto: livePhotoUrl,
-      status: 'en_cours', // plutôt que verified: false
+      idDocumentFront: idDocumentFrontUrl,
+      idDocumentBack: idDocumentBackUrl,
+      facePhoto: facePhotoUrl,
+      status: 'en_cours',
       submittedAt: new Date(),
       verifiedAt: null,
       comments: null
     };
-
 
     await user.save();
 
@@ -245,6 +252,7 @@ static async updateKYC(userId, idDocumentFile, livePhotoFile) {
       kyc: user.kyc,
     };
   } catch (error) {
+    console.error('Erreur updateKYC service:', error);
     throw new Error(error.message || "Erreur lors de la mise à jour du KYC");
   }
 }

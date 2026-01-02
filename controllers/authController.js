@@ -120,18 +120,33 @@ class AuthController {
   }
 
   // ====================
-  // SOUMISSION KYC
+  // SOUMISSION KYC (3 étapes)
   // ====================
   static async submitKYC(req, res) {
     try {
       const userId = req.params.id;
-      const idDocumentFile = req.files['idDocument']?.[0];
-      const livePhotoFile = req.files['livePhoto']?.[0];
+      const idDocumentFrontFile = req.files['idDocumentFront']?.[0];
+      const idDocumentBackFile = req.files['idDocumentBack']?.[0];
+      const facePhotoFile = req.files['facePhoto']?.[0];
 
-      const result = await UserService.updateKYC(userId, idDocumentFile, livePhotoFile);
+      if (!idDocumentFrontFile || !idDocumentBackFile || !facePhotoFile) {
+        return res.status(400).json({ 
+          message: 'Les 3 images sont requises (recto, verso, visage)' 
+        });
+      }
+
+      const result = await UserService.updateKYC(
+        userId, 
+        idDocumentFrontFile, 
+        idDocumentBackFile, 
+        facePhotoFile
+      );
       res.json(result);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error('Erreur soumission KYC:', error);
+      res.status(500).json({ 
+        message: error.message || 'Erreur lors de la soumission KYC' 
+      });
     }
   }
 
