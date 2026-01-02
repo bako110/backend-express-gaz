@@ -6,9 +6,28 @@ const User = require('../models/user');
  */
 const checkKYCVerified = async (req, res, next) => {
   try {
-    const userId = req.params.userId || req.params.id || req.body.userId || req.user?.id;
+    // Extraire l'userId depuis différentes sources possibles
+    const userId = req.params.userId || 
+                   req.params.id || 
+                   req.params.livreurId || 
+                   req.params.distributorId ||
+                   req.body.userId || 
+                   req.user?.id;
+    
+    console.log('🔍 checkKYC - Extraction userId:', {
+      fromParamsUserId: req.params.userId,
+      fromParamsId: req.params.id,
+      fromParamsLivreurId: req.params.livreurId,
+      fromParamsDistributorId: req.params.distributorId,
+      fromBodyUserId: req.body.userId,
+      extractedUserId: userId
+    });
     
     if (!userId) {
+      console.error('❌ checkKYC - Aucun userId trouvé dans:', {
+        params: req.params,
+        body: req.body
+      });
       return res.status(400).json({ 
         message: 'ID utilisateur manquant',
         kycRequired: false
