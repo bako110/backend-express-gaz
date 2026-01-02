@@ -37,10 +37,16 @@ const userSchema = new mongoose.Schema(
       type: String, // URL de l'avatar
       default: null,
     },
+    // ✅ Première connexion
+    firstLogin: {
+      type: Boolean,
+      default: true,
+    },
     // ✅ Module KYC
     kyc: {
-      idDocument: { type: String, default: null },
-      livePhoto: { type: String, default: null },
+      idDocumentFront: { type: String, default: null },
+      idDocumentBack: { type: String, default: null },
+      facePhoto: { type: String, default: null },
       status: {
         type: String,
         enum: ['non_verifie', 'en_cours', 'verifie', 'rejete'],

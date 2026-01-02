@@ -20,7 +20,7 @@ const notificationRoutes = require('./routes/notificationRoute');
 const qrCodeRoutes = require('./routes/qrcodeRoute');
 const userRoutes = require('./routes/userRoutes');
 // const userDataRoutes = require('./routes/userDataRoutes');
-// const transactionRoutes = require('./routes/transactionRoutes');
+const transactionRoutes = require('./routes/transactionRoutes');
 const orderAdminRoutes = require('./routes/orderAdminRoutes');
 // Cloudinary
 const cloudinary = require('./cloudinaryConfig');
@@ -67,10 +67,11 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/commande', qrCodeRoutes);
 app.use('/api/users', userRoutes);
 // app.use('/api/user-data', userDataRoutes);
-// app.use('/api/transactions', transactionRoutes);
+app.use('/api/transactions', transactionRoutes);
 app.use('/api/admin/orders', orderAdminRoutes);
 app.use('/api/pin', pinRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/welcome', require('./routes/welcomeRoutes'));
 
 console.log('✅ Toutes les routes API montées');
 console.log('   - /api/auth');
@@ -84,6 +85,7 @@ console.log('   - /api/delivery-info');
 console.log('   - /api/notifications');
 console.log('   - /api/commande');
 console.log('   - /api/users');
+console.log('   - /api/transactions');
 console.log('   - /api/messages');
 
 

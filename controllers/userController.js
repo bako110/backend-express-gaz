@@ -128,12 +128,42 @@ const updateKycStatus = asyncHandler(async (req, res) => {
     throw new Error('Utilisateur non trouvé');
   }
 
-  user.kyc.status = status;
-  user.kyc.comments = comments || user.kyc.comments;
-  
+  // Si le KYC est rejeté, supprimer les images de Cloudinary et réinitialiser les champs
+  if (status === 'rejete') {
+    const { deleteFromCloudinary } = require('../utils/uploadToCloudinary');
+    
+    console.log(' Rejet KYC pour utilisateur:', user.name);
+    
+    // Supprimer les 3 images de Cloudinary
+    if (user.kyc.idDocumentFront) {
+      await deleteFromCloudinary(user.kyc.idDocumentFront);
+    }
+    if (user.kyc.idDocumentBack) {
+      await deleteFromCloudinary(user.kyc.idDocumentBack);
+    }
+    if (user.kyc.facePhoto) {
+      await deleteFromCloudinary(user.kyc.facePhoto);
+    }
+
+    // Réinitialiser les champs d'images pour permettre une nouvelle soumission
+    user.kyc.idDocumentFront = null;
+    user.kyc.idDocumentBack = null;
+    user.kyc.facePhoto = null;
+    user.kyc.submittedAt = null;
+    user.kyc.verifiedAt = null;
+    
+    console.log(' Images KYC supprimées et champs réinitialisés');
+  }
+
+  // Si le KYC est vérifié
   if (status === 'verifie') {
     user.kyc.verifiedAt = new Date();
+    user.kyc.comments = comments || 'KYC vérifié avec succès';
   }
+
+  // Mettre à jour le statut et les commentaires
+  user.kyc.status = status;
+  user.kyc.comments = comments || user.kyc.comments;
 
   const updatedUser = await user.save();
 

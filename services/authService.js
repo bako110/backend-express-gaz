@@ -5,7 +5,7 @@ const Livreur = require('../models/livreur');
 const crypto = require('crypto');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
-  const uploadToCloudinary = require('../utils/uploadToCloudinary');
+const { uploadToCloudinary } = require('../utils/uploadToCloudinary');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret123';
 const JWT_EXPIRES_IN = '7d';
@@ -144,7 +144,7 @@ static async registerUser({ name, phone, pin, userType, address, zone, neighborh
     return {
       success: true,
       token,
-      user: { id: user._id.toString(), name: user.name, phone: user.phone, userType: user.userType, photo: user.photo, lastLocation: user.lastLocation || null },
+      user: { id: user._id.toString(), name: user.name, phone: user.phone, userType: user.userType, photo: user.photo, lastLocation: user.lastLocation || null, firstLogin: user.firstLogin !== false },
       profile: profileData,
     };
   }
@@ -185,7 +185,7 @@ static async registerUser({ name, phone, pin, userType, address, zone, neighborh
     return {
       success: true,
       token,
-      user: { id: user._id.toString(), name: user.name, phone: user.phone, userType: user.userType, photo: user.photo, lastLocation: user.lastLocation || null },
+      user: { id: user._id.toString(), name: user.name, phone: user.phone, userType: user.userType, photo: user.photo, lastLocation: user.lastLocation || null, firstLogin: user.firstLogin !== false },
       profile: profileData,
     };
   }
