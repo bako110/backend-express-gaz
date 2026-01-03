@@ -59,7 +59,12 @@ const clientSchema = new mongoose.Schema({
       // ------------------- Code de validation numérique -------------------
       validationCode: { type: String, required: true },   // 🔢 Code à 6 chiffres pour validation
       // ✅ PETITE SECTION SIMPLE - Livraison ou Retrait
-      isDelivery: { type: Boolean, default: false } // true = à livrer, false = retrait sur place
+      isDelivery: { type: Boolean, default: false }, // true = à livrer, false = retrait sur place
+      
+      // ------------------- Annulation -------------------
+      cancelReason: { type: String },
+      cancelledBy: { type: String, enum: ['driver', 'client', 'distributor'] },
+      driverCancelledAt: { type: Date } // Date d'annulation par le livreur (pour détecter les réassignations)
     }
   ],
 

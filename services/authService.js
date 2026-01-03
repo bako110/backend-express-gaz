@@ -11,27 +11,21 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secret123';
 const JWT_EXPIRES_IN = '7d';
 
 class UserService {
-  // Génère un avatar par défaut basé sur le nom
-  static generateDefaultAvatar(name) {
-    if (!name) return '';
-    const initials = name
-      .split(' ')
-      .map(n => n[0]?.toUpperCase())
-      .join('')
-      .slice(0, 2);
-    const hash = crypto.createHash('md5').update(name).digest('hex');
-    const color1 = `#${hash.slice(0, 6)}`;
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=${color1.replace('#', '')}&color=fff&bold=true`;
-  }
-
   // ------------------- INSCRIPTION -------------------
   // ------------------- INSCRIPTION -------------------
 static async registerUser({ name, phone, pin, userType, address, zone, neighborhood }) {
   const existingUser = await User.findOne({ phone });
   if (existingUser) throw new Error('Un compte existe déjà avec ce numéro');
 
-  const avatarUrl = this.generateDefaultAvatar(name);
-  const user = new User({ name, phone, pin, userType, photo: avatarUrl, neighborhood });
+  // Icône de profil par défaut selon le type d'utilisateur
+  const defaultIcons = {
+    livreur: 'https://img.freepik.com/vecteurs-premium/icone-profil-utilisateur-reseaux-sociaux_509778-560.jpg',
+    client: 'https://img.freepik.com/premium-vector/green-user-account-profile-flat-icon-apps-websites_1254296-1186.jpg',
+    distributeur: 'https://img.freepik.com/premium-vector/green-user-account-profile-flat-icon-apps-websites_1254296-1186.jpg'
+  };
+  
+  const defaultProfileIcon = defaultIcons[userType] || 'https://img.freepik.com/premium-vector/green-user-account-profile-flat-icon-apps-websites_1254296-1186.jpg';
+  const user = new User({ name, phone, pin, userType, photo: defaultProfileIcon, neighborhood });
   await user.save();
 
   let profileData = null;

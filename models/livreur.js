@@ -1,5 +1,12 @@
 const mongoose = require('mongoose');
 
+// Définir le sous-schéma des produits explicitement
+const productSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  quantity: { type: Number, required: true },
+  type: { type: String, required: true }
+}, { _id: false });
+
 const livreurSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   zone: { type: String , required: false },
@@ -58,7 +65,7 @@ const livreurSchema = new mongoose.Schema({
       estimatedTime: { type: String },
       total: { type: Number, required: true },
       deliveryFee: { type: Number, default: 0 },
-      products: [{ name: String, quantity: Number, type: String }],
+      products: [productSchema],
       
       // ✅ TIMESTAMPS CRITIQUES
       createdAt: { type: Date, default: Date.now },          // Quand assignée

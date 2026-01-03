@@ -1423,7 +1423,18 @@ class CommandeService {
       if (!order) throw new Error("Commande introuvable");
 
       // Vérifier que c'est bien le bon livreur
+      console.log("🔍 [CANCEL_DRIVER] Vérification livreur:", {
+        orderLivreurId: order.livreurId ? order.livreurId.toString() : null,
+        requestLivreurId: livreurId.toString(),
+        match: order.livreurId && order.livreurId.toString() === livreurId.toString()
+      });
+      
       if (!order.livreurId || order.livreurId.toString() !== livreurId.toString()) {
+        console.error("❌ [CANCEL_DRIVER] Livreur non autorisé:", {
+          orderLivreurId: order.livreurId ? order.livreurId.toString() : 'null',
+          requestLivreurId: livreurId.toString(),
+          orderStatus: order.status
+        });
         throw new Error("Vous n'êtes pas assigné à cette commande");
       }
 

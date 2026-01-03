@@ -94,7 +94,22 @@ class MessageSocket {
 
           console.log('✅ Message envoyé:', message._id);
 
-          // Émettre le message au destinataire (seulement si différent de l'expéditeur)
+          // Préparer les données du message
+          const messageData = {
+            _id: message._id,
+            senderId: message.senderId,
+            senderName: message.senderName,
+            senderRole: message.senderRole,
+            receiverId: message.receiverId,
+            receiverName: message.receiverName,
+            receiverRole: message.receiverRole,
+            content: message.content,
+            createdAt: message.createdAt,
+            conversationId: message.conversationId,
+            isRead: message.isRead
+          };
+
+          // Émettre le message au destinataire
           // Utiliser receiverUserIdForConversation (User._id) pour trouver le socket
           // car les mobiles se connectent avec leur User._id, pas Client/Distributor/Livreur._id
           const socketLookupId = receiverUserIdForConversation || receiverId;
@@ -109,32 +124,14 @@ class MessageSocket {
           });
           
           if (receiverSocketId && receiverSocketId !== socket.id) {
-            this.io.to(receiverSocketId).emit('message:received', {
-              _id: message._id,
-              senderId: message.senderId,
-              senderName: message.senderName,
-              senderRole: message.senderRole,
-              receiverName: message.receiverName,
-              content: message.content,
-              createdAt: message.createdAt,
-              conversationId: message.conversationId,
-            });
+            this.io.to(receiverSocketId).emit('message:received', messageData);
             console.log(`📨 Message émis au destinataire: ${socketLookupId}`);
           } else {
             console.log(`⚠️ Socket destinataire non trouvé ou identique à l'expéditeur`);
           }
 
-          // Confirmer l'envoi à l'expéditeur
-          socket.emit('message:sent', {
-            _id: message._id,
-            senderId: message.senderId,
-            senderName: message.senderName,
-            senderRole: message.senderRole,
-            receiverName: message.receiverName,
-            content: message.content,
-            createdAt: message.createdAt,
-            conversationId: message.conversationId,
-          });
+          // Émettre le message à l'expéditeur aussi (pour qu'il le voie dans sa conversation)
+          socket.emit('message:sent', messageData);
 
           // Notifier tous les admins si le message est pour l'admin
           if (receiverRole === 'admin') {

@@ -23,20 +23,23 @@ const checkKYCVerified = async (req, res, next) => {
       extractedUserId: userId
     });
     
-    // 2. Si pas trouvé, vérifier si c'est un livreurId ou distributorId
+    // 2. Si pas trouvé, vérifier si c'est un livreurId ou distributorId (params ou body)
     if (!userId) {
-      if (req.params.livreurId) {
-        console.log('🔍 checkKYC - Recherche User depuis Livreur:', req.params.livreurId);
-        const livreur = await Livreur.findById(req.params.livreurId).populate('user');
+      const livreurId = req.params.livreurId || req.body.livreurId || req.body.driverId;
+      const distributorId = req.params.distributorId || req.body.distributorId;
+      
+      if (livreurId) {
+        console.log('🔍 checkKYC - Recherche User depuis Livreur:', livreurId);
+        const livreur = await Livreur.findById(livreurId).populate('user');
         if (livreur && livreur.user) {
           userId = livreur.user._id || livreur.user.id;
           console.log('✅ checkKYC - User trouvé depuis Livreur:', userId);
         } else {
           console.error('❌ checkKYC - Livreur non trouvé ou sans user');
         }
-      } else if (req.params.distributorId) {
-        console.log('🔍 checkKYC - Recherche User depuis Distributor:', req.params.distributorId);
-        const distributor = await Distributor.findById(req.params.distributorId).populate('user');
+      } else if (distributorId) {
+        console.log('🔍 checkKYC - Recherche User depuis Distributor:', distributorId);
+        const distributor = await Distributor.findById(distributorId).populate('user');
         if (distributor && distributor.user) {
           userId = distributor.user._id || distributor.user.id;
           console.log('✅ checkKYC - User trouvé depuis Distributor:', userId);
